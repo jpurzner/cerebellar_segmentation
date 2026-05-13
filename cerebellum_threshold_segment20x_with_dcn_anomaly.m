@@ -893,58 +893,79 @@ fprintf('EGL/IGL adjudication V3 (topology+NeuN): EGL->IGL %d px (%.3f%%), IGL->
     sum(egl_to_igl(:)), 100*sum(egl_to_igl(:))/numel(set_bin), ...
     sum(igl_to_egl(:)), 100*sum(igl_to_egl(:))/numel(set_bin));
 
-%% RIBBON DISCONTINUITY DETECTION (V4)
-% Both EGL and IGL form continuous ribbons. The typical EZH2-cKO failure
-% is a CHUNK of one or part of a lobule (~100-300 um wide) where the
-% ribbon "crosses over" to the wrong label. Morphological closing with
-% a moderate-radius disk bridges these chunks but not natural foliation
-% gaps (sulci > 200 um wide with > 90 deg direction changes).
+%% RIBBON DISCONTINUITY DETECTION (V4 — DIRECTIONAL, 3 RIBBONS)
+% EGL, IGL, and ML are all continuous ribbons. Per the user, the typical
+% EZH2-cKO failure is a CHUNK of one or part of a lobule (~100-300 um wide)
+% where the ribbon "crosses over" to the wrong label.
 %
-% Triple-constraint reassignment — fires only when:
-%   (1) pixel is in the closed-but-not-original region (the gap)
-%   (2) pixel is currently labeled as the OTHER ribbon (cross-over)
-%   (3) signal AND topology agree with the proposed new label
+% V4 V1 used DISC closing — that expands the ribbon perpendicular AND
+% along its direction equally, pulling in too much adjacent tissue.
+% V4 V2 uses MULTI-ANGLE LINE STREL closing — bridges gaps ALONG the
+% ribbon direction without expanding perpendicular. Per user: "we should
+% expand in the predicted direction of the ribbon".
 %
-% Designed for the small/medium chunky failures the user described, not
-% wholesale layer swaps (V3 catches those).
+% Also extended:
+%   - EGL reclaims from IGL, DWL, AND DCN (per user: "DWL being in the EGL"
+%     and "DCN are expanding into the adjacent EGL")
+%   - IGL reclaims from EGL and DWL
+%   - ML now adjudicated as the third ribbon (NEW)
 
 % pia_dist_um was computed in V3 above
-% Closure radii match the user's "single or part of a lobule" failure scale.
-% Smaller than 50 um and we miss real chunks; larger than 75 um and we
-% bridge across natural sulci, creating false gap candidates.
-egl_close_radius_um = 50;
-igl_close_radius_um = 50;
-egl_close_radius_px = round(egl_close_radius_um / 0.5119049);
-igl_close_radius_px = round(igl_close_radius_um / 0.5119049);
+line_len_um = 50;   % bridges gaps up to ~50 um along the ribbon
+line_len_px = round(line_len_um / 0.5119049);
+
+% Helper: multi-angle line-strel close — bridges gaps in any direction
+% (6 line orientations every 30 deg) but doesn't expand the ribbon laterally
+% the way a disc would. UNION across orientations preserves the ribbon's
+% native shape while bridging breaks along its direction.
+ribbon_dir_close = @(mask) ...
+    imclose(mask, strel('line', line_len_px, 0))   | ...
+    imclose(mask, strel('line', line_len_px, 30))  | ...
+    imclose(mask, strel('line', line_len_px, 60))  | ...
+    imclose(mask, strel('line', line_len_px, 90))  | ...
+    imclose(mask, strel('line', line_len_px, 120)) | ...
+    imclose(mask, strel('line', line_len_px, 150));
 
 % --- EGL ribbon ---
 egl_ribbon = (set_bin == 2) | (set_bin == 3);
-egl_closed = imclose(egl_ribbon, strel('disk', egl_close_radius_px));
+egl_closed = ribbon_dir_close(egl_ribbon);
 egl_gap = egl_closed & ~egl_ribbon & all_cerebellum_orig;
-% Reassignment: gap pixel currently IGL, NeuN clearly low, near pia
-egl_iEGL_gain = egl_gap & (set_bin == 4) & (c_local < 0.35) ...
+% Reclaim from IGL, DWL, OR DCN (any non-EGL deep label that landed in the
+% EGL ribbon trajectory). Constraints: low NeuN AND near pia.
+not_egl_target = (set_bin == 4) | (set_bin == 6) | (set_bin == 8);
+egl_iEGL_gain = egl_gap & not_egl_target & (c_local < 0.35) ...
                         & (pia_dist_um < 50) & (a_nf > a_level);
-egl_oEGL_gain = egl_gap & (set_bin == 4) & (c_local < 0.35) ...
+egl_oEGL_gain = egl_gap & not_egl_target & (c_local < 0.35) ...
                         & (pia_dist_um < 50) & ~(a_nf > a_level);
 set_bin(egl_iEGL_gain) = 2;
 set_bin(egl_oEGL_gain) = 3;
 
 % --- IGL ribbon ---
 igl_ribbon = (set_bin == 4);   % refresh after EGL adjudication
-igl_closed = imclose(igl_ribbon, strel('disk', igl_close_radius_px));
+igl_closed = ribbon_dir_close(igl_ribbon);
 igl_gap = igl_closed & ~igl_ribbon & all_cerebellum_orig;
-% Reassignment: gap pixel currently EGL, NeuN moderately high, deep tissue.
-% c_local > 0.55 is between iEGL q75 (0.54) and IGL q5 (0.38) — sits in the
-% overlap zone but combined with the gap-fill + topology constraints,
-% should specifically fire on chunks of misclassified IGL.
-igl_gain = igl_gap & ((set_bin == 2) | (set_bin == 3)) & (c_local > 0.55) ...
+% Reclaim from EGL or DWL. Constraints: high NeuN AND deep tissue.
+not_igl_target = (set_bin == 2) | (set_bin == 3) | (set_bin == 6);
+igl_gain = igl_gap & not_igl_target & (c_local > 0.55) ...
                    & (pia_dist_um > 50);
 set_bin(igl_gain) = 4;
 
-fprintf('Ribbon discontinuity (V4): EGL+%d (%.3f%%), IGL+%d (%.3f%%)\n', ...
+% --- ML ribbon (NEW) ---
+ml_ribbon = (set_bin == 5);
+ml_closed = ribbon_dir_close(ml_ribbon);
+ml_gap = ml_closed & ~ml_ribbon & all_cerebellum_orig;
+% ML signal: low p27 + low-moderate NeuN + sits between EGL and IGL.
+% Reclaim from IGL primarily (most common confusion), with constraint:
+% NeuN moderate (not high IGL), p27 low (not EGL), pia_dist intermediate.
+ml_gain = ml_gap & (set_bin == 4) & (c_local < 0.40) ...
+                 & ~(a_nf > a_level) & (pia_dist_um > 30);
+set_bin(ml_gain) = 5;
+
+fprintf('Ribbon discontinuity (V4 directional): EGL+%d (%.3f%%), IGL+%d (%.3f%%), ML+%d (%.3f%%)\n', ...
     sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)), ...
     100*(sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)))/numel(set_bin), ...
-    sum(igl_gain(:)), 100*sum(igl_gain(:))/numel(set_bin));
+    sum(igl_gain(:)), 100*sum(igl_gain(:))/numel(set_bin), ...
+    sum(ml_gain(:)), 100*sum(ml_gain(:))/numel(set_bin));
 
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy

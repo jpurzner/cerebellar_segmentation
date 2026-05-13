@@ -1,0 +1,542 @@
+---
+title: "Untitled"
+author: "James Purzner"
+date: "5/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, eval = FALSE}
+devtools::install_github("slowkow/ggrepel")
+```
+
+## R Markdown
+
+
+load data
+```{r}
+library(stringr)
+library(ggplot2)
+library(ggrepel)
+library(plyr)
+library(dplyr)
+library(ggrepel)
+
+```
+
+
+```{r}
+
+area <- read.csv("~/Dropbox/imaging_analysis/cerebellar_segmentation/cerebellum_area_ezh2ko.txt")
+label_split <- t(as.data.frame(str_split(area$slide, "_")))
+area$slide_num <- label_split[,1]
+area$id <- label_split[,2]
+area  <- area %>%
+  dplyr::filter(!slide %in% c("s4_B_p27", "s4_G_p27", "s6_E_p27", "s4_E_p27")) 
+
+
+area$genotype <- plyr::mapvalues(area$id, c("A", "B", "C", "D", "E", "F", "G"), c("Ezh2 cKO", "Ezh2 cKO", "Wt", "Wt", "Ezh2 cKO", "Wt", "Wt"))
+
+
+
+area %>%
+  dplyr::filter(region_names == "iEGL") %>%
+  ggplot(aes(x = id, y = p27_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  ylim(c(1000, 2000 )) 
+
+
+area %>%
+  ggplot(aes(x = id, y = p27_thresh_mean)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2) + 
+  facet_grid(inner~region_names) 
+
+area %>%
+  dplyr::filter(region_names == "iEGL") %>%
+  ggplot(aes(x = id, y = p27_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  ylim(c(1000, 2000 )) + 
+  facet_wrap(~inner)
+
+
+area %>%
+  dplyr::filter(region_names == "iEGL") %>%
+  ggplot(aes(x = id, y = p27_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  ylim(c(1000, 2000 )) + 
+  facet_wrap(~inner)
+
+area %>%
+  dplyr::filter(region_names == "oEGL") %>%
+  ggplot(aes(x = id, y = p27_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  facet_wrap(~inner)
+
+
+area %>%
+  dplyr::filter(region_names == "IGL") %>%
+  ggplot(aes(x = id, y = p27_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  ylim(c(1000, 2000 )) + 
+  facet_wrap(~inner)
+
+
+area %>%
+  dplyr::filter(region_names == "IGL") %>%
+  ggplot(aes(x = id, y = DAPI_unfilt, label = slide)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel() +
+  facet_wrap(~inner)
+
+```
+
+```{r}
+
+area_mean <- area %>%
+  dplyr::group_by(region_names, inner,  genotype) %>%
+  dplyr::summarise(mean_unnorm_p27 = mean(p27_unfilt), 
+                   sd_unnorm_p27 = sd(p27_unfilt),
+                   meaan_DAPI_unfilt  = mean(DAPI_unfilt), 
+                    sd_DAPI_unfilt  =sd(DAPI_unfilt), 
+                   mean_area = mean(area), 
+                   sd_area = sd(area)) %>%
+  dplyr::mutate(max_mean_unnorm_p27 = max(mean_unnorm_p27), 
+                max_mean_DAPI_unfil = max(meaan_DAPI_unfilt)) 
+
+
+area_wmean <- left_join(area, area_mean)
+
+area_mean$p27_unfilt_percent <- area_mean$mean_unnorm_p27 / area_mean$max_mean_unnorm_p27
+area_wmean$p27_unfilt_percent <- area_wmean$p27_unfilt / area_wmean$max_mean_unnorm_p27
+
+area_mean$meaan_DAPI_percent <- area_mean$meaan_DAPI_unfilt / area_mean$max_mean_DAPI_unfil
+area_wmean$DAPI_percent <- area_wmean$DAPI_unfilt / area_wmean$max_mean_DAPI_unfil
+
+
+
+
+
+area %>%
+  dplyr::filter(region_names == "iEGL") %>%
+
+  ggplot(aes(x = genotype, y = p27_unfilt, label = id)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel(label.padding = 2) +
+  ylim(c(1000, 2000 )) + 
+  facet_wrap(~inner)
+
+
+area_mean_percent <- area_wmean %>%
+  dplyr::group_by(region_names, inner,  genotype) %>%
+  dplyr::summarise(mean_unnorm_p27_percent = mean(p27_unfilt_percent), 
+                   sd_unnorm_p27_percent = sd(p27_unfilt_percent), 
+                   mean_DAPI_percent = mean(DAPI_percent), 
+                   sd_DAPI_percent = sd(DAPI_percent) 
+                   )
+
+
+
+```
+
+
+```{r, fig.height = 3, fig.width= 5}
+area_mean  %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter( region_names %in% c("oEGL", "iEGL", "IGL", "ML")) %>%
+  dplyr::mutate(genotype = factor(genotype, levels = c("Wt", "Ezh2 cKO"))) %>%
+  dplyr::mutate(region_names = factor(region_names, levels = c("oEGL", "iEGL", "IGL", "ML"))) %>%
+  ggplot(aes(x = genotype, y = mean_area )) + 
+  geom_bar(stat = "identity") + 
+   geom_errorbar( aes(x = genotype, ymin= mean_area-sd_area, 
+                    ymax=mean_area+sd_area), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+   labs(x = "Genotype", y = "Area mm^2 ") + 
+  facet_wrap(~region_names, ncol = 4) 
+
+
+```
+
+```{r}
+# Calculate p-values for each region
+p_values <- area %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter(region_names %in% c("oEGL", "iEGL", "IGL", "ML")) %>%
+  dplyr::group_by(region_names) %>%
+  dplyr::summarise(
+    p_value = t.test(area ~ genotype)$p.value
+  ) %>%
+  dplyr::mutate(
+    label = ifelse(p_value < 0.001, "p < 0.001", paste("p =", signif(p_value, 2)))
+  )
+
+
+# Create a dataframe for p-values with their positions for annotation
+p_values_df <- area_mean %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter(region_names %in% c("oEGL", "iEGL", "IGL", "ML")) %>%
+  dplyr::group_by(region_names) %>%
+  dplyr::summarise(
+    max_y = max(mean_area + sd_area)  # Use max mean_area + sd_area for y position
+  ) %>%
+  dplyr::left_join(p_values, by = "region_names")
+
+
+library(ggplot2)
+library(dplyr)
+
+# Create the plot
+regions_area_plot <- area_mean %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter(region_names %in% c("oEGL", "iEGL", "IGL", "ML")) %>%
+  dplyr::mutate(genotype = factor(genotype, levels = c("Wt", "Ezh2 cKO"))) %>%
+  dplyr::mutate(region_names = factor(region_names, levels = c("oEGL", "iEGL", "ML",  "IGL"))) %>%
+  ggplot(aes(x = genotype, y = mean_area, fill = genotype)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(ymin = mean_area - sd_area, ymax = mean_area + sd_area), 
+                width = 0.2, color = "black") +
+  labs(x = "Genotype", y = "Area (mm^2)") + 
+    facet_wrap(~ stats::reorder(region_names, factor(region_names, levels = c("oEGL", "iEGL","ML", "IGL" ))), ncol = 4) + 
+
+  geom_text(data = p_values_df, aes(x = 1.5, y = max_y + 0.15 * max_y, label = label), 
+            size = 4, inherit.aes = FALSE, color = "black") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal() + 
+    theme(
+    panel.grid.major.x = element_blank(),  # Remove major x-axis grid lines
+    panel.grid.minor.x = element_blank(),
+    legend.position = c(0.3, 0.8),         # Move legend to the upper right corner inside the plot
+    legend.justification = c("right", "top") # Adjust legend anchor to the top right
+  )
+    
+
+# Print the plot
+print(regions_area_plot)
+
+```
+
+
+
+```{r, fig.width= 4, fig.height= 4}
+
+area_mean_percent %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter( region_names %in% c("iEGL", "IGL")) %>%
+  ggplot(aes(x = genotype, y = mean_unnorm_p27_percent )) + geom_bar(stat = "identity") + 
+   geom_errorbar( aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  facet_wrap(~region_names) 
+  
+
+iEGL <- area_wmean %>%
+  dplyr::filter(region_names == "iEGL" & inner == "full"  )
+
+IGL <- area_wmean %>%
+  dplyr::filter(region_names == "IGL" & inner == "full"  )
+
+oEGL <- area_wmean %>%
+  dplyr::filter(region_names == "oEGL" & inner == "full"  )
+
+  
+
+area_mean_percent %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter( region_names %in% c( "iEGL", "IGL")) %>%
+  ggplot(aes(x = genotype, y = mean_unnorm_p27_percent )) + geom_bar(stat = "identity") + 
+   geom_errorbar( aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  labs(x = "genotype", y = "relative p27 intensity") + 
+  facet_wrap(~region_names) 
+
+
+
+t.test(iEGL$p27_unfilt_percent ~ iEGL$genotype)
+t.test(IGL$p27_unfilt_percent ~ iEGL$genotype)
+t.test(IGL$DAPI_percent ~ iEGL$genotype)
+
+
+area_mean_percent %>% 
+  dplyr::filter(inner == "full") %>%
+#  dplyr::filter( region_names %in% c("iEGL", "IGL")) %>%
+  ggplot(aes(x = genotype, y = mean_DAPI_percent)) + geom_point()+  geom_bar(stat = "identity") + 
+   geom_errorbar( aes(x = genotype, ymin= mean_DAPI_percent-sd_DAPI_percent, 
+                    ymax=mean_DAPI_percent+sd_DAPI_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  facet_wrap(~region_names) 
+  
+
+area_mean_percent %>% 
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter( region_names %in% c("iEGL", "IGL")) %>%
+  ggplot(aes(x = genotype, y = mean_DAPI_percent)) + geom_point()+  geom_bar(stat = "identity") + 
+   geom_errorbar( aes(x = genotype, ymin= mean_DAPI_percent-sd_DAPI_percent, 
+                    ymax=mean_DAPI_percent+sd_DAPI_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  facet_wrap(~region_names) 
+  
+```
+
+
+
+
+```{r}
+# Calculate p-values for each region
+p_value_iEGL <- t.test(iEGL$p27_unfilt_percent ~ iEGL$genotype)$p.value
+p_value_IGL <- t.test(IGL$p27_unfilt_percent ~ IGL$genotype)$p.value
+
+# Create a dataframe for p-values
+p_values_df <- data.frame(
+  region_names = c("iEGL", "IGL"),
+  p_value = c(p_value_iEGL, p_value_IGL),
+  label = c(ifelse(p_value_iEGL < 0.001, "p < 0.001", paste("p =", signif(p_value_iEGL, 2))),
+            ifelse(p_value_IGL < 0.001, "p < 0.001", paste("p =", signif(p_value_IGL, 2)))),
+  y_position = c( max(area_mean_percent$mean_unnorm_p27_percent) + 0.2,  # Adjust these values for positioning
+                  max(area_mean_percent$mean_unnorm_p27_percent) + 0.2)
+)
+
+library(ggplot2)
+library(dplyr)
+
+p27_iEGL_IGL_intensity_plot <- area_mean_percent %>%
+  dplyr::filter(inner == "full") %>%
+  dplyr::filter(region_names %in% c("iEGL", "IGL")) %>%
+  dplyr::mutate(genotype = factor(genotype, levels = c("Wt", "Ezh2 cKO"))) %>%
+  ggplot(aes(x = genotype, y = mean_unnorm_p27_percent, fill = genotype)) + 
+  geom_bar(stat = "identity") + 
+  geom_errorbar(aes(x = genotype, ymin= mean_unnorm_p27_percent - sd_unnorm_p27_percent, 
+                    ymax= mean_unnorm_p27_percent + sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  labs(x = "Genotype", y = "Relative p27 Intensity") + 
+  facet_wrap(~region_names) +
+  geom_text(data = p_values_df, aes(x = 1.5, y = y_position, label = label), 
+            size = 4, inherit.aes = FALSE) +
+  scale_fill_brewer(palette = "Set1") +
+  ylim(0,1.3) +
+  theme_minimal() + 
+    theme(
+    panel.grid.major.x = element_blank(),  # Remove major x-axis grid lines
+    panel.grid.minor.x = element_blank(),
+    legend.position = "none"         # Move legend to the upper right corner inside the pl to the top right
+  )
+
+print(p27_iEGL_IGL_intensity_plot)
+
+
+```
+
+Merge images using patchwork
+
+```{r, fig.height= 3.5, fig.width= 7.5}
+combined_plot <- regions_area_plot + p27_iEGL_IGL_intensity_plot +
+ plot_layout(width = c(2, 1))  # Set the first plot to be half the height of the second
+
+# Print the combined plot
+print(combined_plot)
+
+
+# Save the plot to a file
+ggsave(filename = "~/Dropbox/Q_research/EZH2 final/figures/figures from R/p27_iEGL_IGL_intensity_with_area.png", plot = combined_plot, width = 7, height = 3.5)
+```
+
+
+
+# inner EGL
+
+```{r}
+pos <- position_jitter(width = 0.5, seed = 1)
+
+area_wmean %>%
+  dplyr::filter(region_names == "iEGL") %>%
+  dplyr::filter(inner == "full") %>%
+  ggplot(aes(x = genotype, y = p27_unfilt_percent)) + 
+  geom_point( position =pos, size = 2)  +
+  geom_point(data = subset(area_mean_percent, region_names == "iEGL" & inner == "full") , 
+            aes(x = genotype, y = mean_unnorm_p27_percent), colour = "black", shape = 5) +
+  geom_errorbar(data = subset(area_mean_percent, region_names == "iEGL" & inner == "full") , 
+                aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  geom_label_repel(data =  subset(area_wmean, region_names == "iEGL" & inner == "full") , 
+                   aes(label = id), 
+                   position = pos, 
+                  label.padding = .5, 
+                  label.size=NA, 
+                  fill = NA) +
+  ylim(c(0,1.25))
+
+
+```
+
+
+```{r}
+area_wmean %>%
+  dplyr::filter(region_names %in% c("iEGL", "IGL")) %>%
+  dplyr::filter(inner == "full") %>%
+  ggplot(aes(x = genotype, y = p27_unfilt_percent)) + 
+  geom_point( position =pos, size = 2)  +
+  geom_point(data = subset(area_mean_percent, region_names %in% c("iEGL", "IGL") & inner == "full") , 
+            aes(x = genotype, y = mean_unnorm_p27_percent), colour = "black", shape = 5) +
+  geom_errorbar(data = subset(area_mean_percent, region_names %in% c("iEGL", "IGL") & inner == "full") , 
+                aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  geom_label_repel(data =  subset(area_wmean, region_names %in% c("iEGL", "IGL") & inner == "full") , 
+                   aes(label = id), 
+                   position = pos, 
+                  label.padding = .5, 
+                  label.size=NA, 
+                  fill = NA, 
+                  size = 6) +
+  ylim(c(0,1.25)) + 
+  facet_wrap(~region_names) +
+  labs(x = "Genotype", y = "p27 immunofluoresence ") + 
+  theme(text = element_text( size = 20))
+
+
+  subset(area_mean_percent, region_names %in% c("iEGL", "IGL") & inner == "full")
+  
+  
+```
+
+
+
+
+
+```{r}
+area_wmean %>%
+  dplyr::filter(inner == "full") %>%
+  ggplot(aes(x = genotype, y = p27_unfilt_percent)) + 
+  geom_point( position =pos, size = 2)  +
+  geom_point(data = subset(area_mean_percent, region_names == "iEGL" & inner == "full") , 
+            aes(x = genotype, y = mean_unnorm_p27_percent), colour = "black", shape = 5) +
+  geom_errorbar(data = subset(area_mean_percent, region_names == "iEGL" & inner == "full") , 
+                aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  geom_label_repel(data =  subset(area_wmean, region_names == "iEGL" & inner == "full") , 
+                   aes(label = id), 
+                   position = pos, 
+                  label.padding = .5, 
+                  label.size=NA, 
+                  fill = NA) +
+  ylim(c(0,1.25)) + 
+  facet_wrap(~region_names)
+
+```
+
+```{r}
+
+
+area_mean <- area %>%
+  dplyr::group_by(region_names, inner,  genotype) %>%
+  dplyr::summarise(mean_unnorm_p27 = mean(DAPI_unfilt), 
+                   sd_unnorm_p27 = sd(DAPI_unfilt)) %>%
+  dplyr::mutate(max_mean_unnorm_p27 = max(mean_unnorm_p27)) 
+
+
+area_wmean <- left_join(area, area_mean)
+
+area_wmean$DAPI_unfilt_percent <- area_wmean$DAPI_unfilt / area_wmean$max_mean_unnorm_p27
+
+area %>%
+  dplyr::filter(region_names == "iEGL") %>%
+
+  ggplot(aes(x = genotype, y = DAPI_unfilt, label = id)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2)  +
+  geom_text_repel(label.padding = 2) +
+  ylim(c(1000, 2000 )) + 
+  facet_wrap(~inner)
+
+
+area_mean_percent <- area_wmean %>%
+  dplyr::group_by(region_names, inner,  genotype) %>%
+  dplyr::summarise(mean_unnorm_p27_percent = mean(DAPI_unfilt_percent), 
+                   sd_unnorm_p27_percent = sd(DAPI_unfilt_percent))
+
+
+
+pos <- position_jitter(width = 0.5, seed = 1)
+
+area_wmean %>%
+  dplyr::filter(region_names == "oEGL") %>%
+  dplyr::filter(inner == "full") %>%
+  ggplot(aes(x = genotype, y = DAPI_unfilt_percent)) + 
+  geom_point( position =pos, size = 2)  +
+  geom_point(data = subset(area_mean_percent, region_names == "oEGL" & inner == "full") , 
+            aes(x = genotype, y = mean_unnorm_p27_percent), colour = "black", shape = 5) +
+  geom_errorbar(data = subset(area_mean_percent, region_names == "oEGL" & inner == "full") , 
+                aes(x = genotype, ymin= mean_unnorm_p27_percent-sd_unnorm_p27_percent, 
+                    ymax=mean_unnorm_p27_percent+sd_unnorm_p27_percent), 
+                colour="black", width=.1, inherit.aes = FALSE) +
+  geom_label_repel(data =  subset(area_wmean, region_names == "oEGL" & inner == "full") , 
+                   aes(label = id), 
+                   position = pos, 
+                  label.padding = .5, 
+                  label.size=NA, 
+                  fill = NA) +
+  ylim(c(0,1.25)) + 
+  labs(x = "Genotype", y = "p27 immunofluoresence ") + 
+  theme(text = element_text( size = 20))
+
+
+
+```
+
+
+
+area
+```{r}
+area %>%
+  ggplot(aes(x = id, y = area)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2) + 
+  facet_grid(inner~region_names) 
+
+area %>%
+  ggplot(aes(x = genotype, y = area)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2) + 
+  facet_grid(inner~region_names) 
+
+
+```
+
+```{r}
+  area %>%
+  dplyr::filter(region_names %in% c("iEGL", "oEGL")) %>%
+    dplyr::filter(inner == "full" ) %>%
+  ggplot(aes(x = genotype, y = area)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2) + 
+  facet_wrap(~region_names) + 
+    labs(x = "Genotype", y = "Area mm^2 ") + 
+  theme(text = element_text( size = 20))
+
+  
+  area %>%
+  dplyr::filter(region_names %in% c("ML", "IGL")) %>%
+    dplyr::filter(inner == "full" ) %>%
+  ggplot(aes(x = genotype, y = area)) + 
+  geom_point( position = position_jitter(w = 0.1, h = 0), size = 2) + 
+  facet_wrap(~region_names) + 
+  labs(x = "Genotype", y = "Area mm^2 ") + 
+  theme(text = element_text( size = 20))
+
+  
+
+
+
+  
+```
+
+
+

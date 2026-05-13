@@ -1,0 +1,16 @@
+
+
+s2_5_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s2_5_p27-0026/2018_05_22_s2_5_p27-0026_fused_crop.tif');
+s3_1_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s3_1_p27-0002/2018_05_22_s3_1_p27-0002_fused_crop.tif');
+s3_2_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s3_2_p27-0001/2018_05_22_s3_2_p27-0001_fused_crop.tif');
+s3_5_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s3_5_p27-0006/2018_05_22_s3_5_p27-0006_fused_crop.tif');
+s2_1_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s2_1_p27-0023/2018_05_22_s2_1_p27-0023_fused_crop.tif');
+s1_3_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s1_3_p27-0019/2018_05_22_s1_3_p27-0019_fused_crop.tif');
+s1_2_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s1_2_p27-0021/2018_05_22_s1_2_p27-0021_fused_crop.tif');
+s2_4_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s2_4_p27-0024/2018_05_22_s2_4_p27-0024_fused_crop.tif');
+s3_3_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s3_3_p27-0005/2018_05_22_s3_3_p27-0005_fused_crop.tif');
+s2_2_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s2_2_p27/2018_05_22_s2_2_p27_fused_crop.tif');
+s3_4_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s3_4_p27-0004/2018_05_22_s3_4_p27-0004_fused_crop.tif');
+s2_3_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s2_3_p27-0025/2018_05_22_s2_3_p27-0025_fused_crop.tif');
+s1_5_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s1_5_p27-0018/2018_05_22_s1_5_p27-0018_fused_crop.tif');
+s1_4_p27 = cerebellum_threshold_segment20x('/Users/jpurzner/Dropbox/images/edu_repeat/p27/2018_05_22_s1_4_p27-0020/2018_05_22_s1_4_p27-0020_fused_crop.tif');

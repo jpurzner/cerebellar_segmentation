@@ -829,12 +829,72 @@ set_bin(all_cerebellum_orig == 1) = 1;
 set_bin(ml_final == 1) = 5;
 set_bin(pc_layer_bin == 1) = 7;
 set_bin(dwl_final == 1) = 6;
-set_bin(dcn_final == 1) = 8;   % NEW: DCN, between DWL and IGL
+set_bin(dcn_final == 1) = 8;   % DCN between DWL and IGL
 set_bin(c_final == 1) = 4;
 set_bin(b_final == 1) = 3;
 set_bin(a_final == 1) = 2;
+
+%% EGL/IGL POSTHOC ADJUDICATION via local NeuN intensity (V2)
+% In EZH2 cKO mice the ML is shrunk, so EGL and IGL physically touch with
+% no separation. The pipeline gets confused at the contact zone — in one
+% folium EGL pixels get labeled IGL, elsewhere IGL pixels get labeled EGL.
+% Best example: 2018_05_22_s2_2_p27.
+%
+% Naive per-pixel NeuN thresholding FAILS at P7. Empirically, on this
+% dataset, raw NeuN by layer:
+%   iEGL:  median 0.45, q95 0.87   (EGL has SIGNIFICANT NeuN at P7,
+%   oEGL:  median 0.36, q95 0.51    not "near zero" as in adult)
+%   IGL:   median 0.79, q95 1.00
+%   ML:    median 0.30, q95 0.52
+% iEGL and IGL overlap between 0.40 and 0.50, so a per-pixel global
+% threshold reassigns most of EGL to IGL.
+%
+% Solution: two-part constraint —
+%   (1) only adjudicate at the EGL/IGL contact zone (within 10 um of both
+%       labels), where the failures actually live
+%   (2) use very strict thresholds: only fire when raw NeuN is well outside
+%       the overlap zone (0.60 for "really IGL", 0.20 for "really EGL")
+
+c_raw = mat2gray(double(c));
+c_local = imgaussfilt(c_raw, 3*scaling);   % small smoothing, bridges cell gaps
+% Calibrated to the actual P7 distribution on this dataset:
+%   - 95% of IGL pixels are > 0.38
+%   - 25% of iEGL pixels are > 0.54
+%   - we want to fire on the TAIL of EGL (apparently-IGL pixels) and the
+%     TAIL of IGL (apparently-EGL pixels)
+neun_high = 0.65;   % top ~10% of iEGL distribution; bulk of IGL is above
+neun_low  = 0.30;   % bottom ~25% of IGL; well into iEGL territory
+
+% No contact-zone restriction (V2 had it but missed wholesale-layer-swap
+% failures where there's no nearby correctly-labeled boundary). Instead use
+% TOPOLOGICAL constraint via distance from the cerebellum boundary (pia):
+%   - EGL territory: pia_dist < 50 um
+%   - IGL territory: pia_dist > 30 um (deeper, with overlap zone 30-50 um)
+%
+% Adjudicate only when the current label disagrees with BOTH the NeuN signal
+% AND the topological position. Less ambiguity, fewer false positives.
+pia_dist_um = bwdist(~all_cerebellum_orig) * 0.5119049;   % distance in microns
+in_egl_zone = pia_dist_um < 50;     % EGL is within 50 um of pia normally
+in_igl_zone = pia_dist_um > 30;     % IGL is at least 30 um deep
+
+egl_now = (set_bin == 2) | (set_bin == 3);
+igl_now = (set_bin == 4);
+
+% EGL -> IGL: pixel currently labeled EGL, NeuN high, AND deep (not at surface)
+egl_to_igl = egl_now & (c_local > neun_high) & in_igl_zone & ~in_egl_zone;
+set_bin(egl_to_igl) = 4;
+
+% IGL -> EGL: pixel currently labeled IGL, NeuN low, AND near surface
+igl_to_egl = igl_now & (c_local < neun_low) & in_egl_zone & ~in_igl_zone;
+set_bin(igl_to_egl & (a_nf > a_level)) = 2;
+set_bin(igl_to_egl & ~(a_nf > a_level)) = 3;
+
+fprintf('EGL/IGL adjudication V3 (topology+NeuN): EGL->IGL %d px (%.3f%%), IGL->EGL %d px (%.3f%%)\n', ...
+    sum(egl_to_igl(:)), 100*sum(egl_to_igl(:))/numel(set_bin), ...
+    sum(igl_to_egl(:)), 100*sum(igl_to_egl(:))/numel(set_bin));
+
 set_bin(pc_bin_filt == 1) = 7;
-% NEW: anomaly regions OVERRIDE all biological labels — they're untrustworthy
+% Anomaly regions OVERRIDE all biological labels — they're untrustworthy
 set_bin(anomaly_mask == 1) = 9;
 %set_bin(pia_outline == 1) = 0;
 figure

@@ -319,7 +319,20 @@ c_bin = bwareafilt(c_bin > 0,[20000 Inf]);
 c_whole = im_get_overlap(c_bin, c_nfg_h > c_level, 0.6, 200);
 ca_whole = im_get_overlap(c_bin, a_nfg_h > a_level, 0.6, 200);
 cb_whole = im_get_overlap(c_bin, b_nfg_h > b_level, 0.3, 200);
-c_final = (ca_whole + c_whole + cb_whole)  > 0 ; 
+
+% IGL FIX: original used (ca_whole | c_whole | cb_whole) — pure OR meant a
+% region with high p27 OR high DAPI inside the smoothed-NeuN-top-40% area
+% became IGL even with little raw NeuN. PC and basket cells (NeuN-, p27+/-,
+% DAPI+) sitting just inside the IGL boundary got incorrectly absorbed into
+% IGL. Symptom user reported: "non-NeuN cells gathering near the PCL".
+%
+% New rule: IGL membership requires raw NeuN intensity directly. Either
+%   (a) confirmed by NeuN signal (c_whole), OR
+%   (b) confirmed by p27 AND raw NeuN above c_level (ca_whole + neun_strict).
+% Drop pure-DAPI-confirmation (cb_whole) entirely — that was the worst
+% offender, since DAPI is high in PCs and basket cells with no NeuN.
+neun_strict = c_nf > c_level;
+c_final = c_whole > 0 | (ca_whole > 0 & neun_strict);
 c_final = imclose(c_final, strel('disk', 5*scaling));
 c_final  = smallfill( c_final, 10000 );
 c_final = bwareafilt(c_final > 0,[200000 Inf]);
@@ -458,10 +471,19 @@ egl_mask = imdilate(egl_mask | egl_phase, strel('disk',5*scaling));
 %egl_thin = bwmorph(egl_mask,'thin', Inf);
 %egl_thin_mask = imdilate(egl_thin, strel('disk',10));
 
-%% refine the purkinje cell zone, which includes more then PC 
+%% refine the purkinje cell zone, which includes more then PC
 pc_layer_mask = igl_in_mask - igl_in - egl_mask;
 pc_layer_mask = pc_layer_mask == 1;
-pc_layer_bin = (pc_layer_mask .* b_nfg) > 0.4;
+
+% PCL FIX: original used ANY DAPI-bright pixel in this ring as PCL.
+% Problem: basket and stellate interneurons (8-10 um cells) also have bright
+% DAPI nuclei and live in the molecular layer adjacent to PCs — they were
+% being mislabeled as PCL. Real Purkinje cell SOMATA are 15-25 um diameter
+% (~30-50 px at 20x = ~700-2000 px area). Filter pc_layer_bin by component
+% area to keep only PC-sized blobs.
+pc_layer_seed = (pc_layer_mask .* b_nfg) > 0.4;
+pc_layer_seed = bwareafilt(pc_layer_seed > 0, [round(500*scaling^2) round(8000*scaling^2)]);
+pc_layer_bin = pc_layer_seed;
 
 
 a_set_thresh_mean = mean(mean(a_set_thresh));

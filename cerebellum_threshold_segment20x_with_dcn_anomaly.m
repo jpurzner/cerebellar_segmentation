@@ -893,6 +893,59 @@ fprintf('EGL/IGL adjudication V3 (topology+NeuN): EGL->IGL %d px (%.3f%%), IGL->
     sum(egl_to_igl(:)), 100*sum(egl_to_igl(:))/numel(set_bin), ...
     sum(igl_to_egl(:)), 100*sum(igl_to_egl(:))/numel(set_bin));
 
+%% RIBBON DISCONTINUITY DETECTION (V4)
+% Both EGL and IGL form continuous ribbons. The typical EZH2-cKO failure
+% is a CHUNK of one or part of a lobule (~100-300 um wide) where the
+% ribbon "crosses over" to the wrong label. Morphological closing with
+% a moderate-radius disk bridges these chunks but not natural foliation
+% gaps (sulci > 200 um wide with > 90 deg direction changes).
+%
+% Triple-constraint reassignment — fires only when:
+%   (1) pixel is in the closed-but-not-original region (the gap)
+%   (2) pixel is currently labeled as the OTHER ribbon (cross-over)
+%   (3) signal AND topology agree with the proposed new label
+%
+% Designed for the small/medium chunky failures the user described, not
+% wholesale layer swaps (V3 catches those).
+
+% pia_dist_um was computed in V3 above
+% Closure radii match the user's "single or part of a lobule" failure scale.
+% Smaller than 50 um and we miss real chunks; larger than 75 um and we
+% bridge across natural sulci, creating false gap candidates.
+egl_close_radius_um = 50;
+igl_close_radius_um = 50;
+egl_close_radius_px = round(egl_close_radius_um / 0.5119049);
+igl_close_radius_px = round(igl_close_radius_um / 0.5119049);
+
+% --- EGL ribbon ---
+egl_ribbon = (set_bin == 2) | (set_bin == 3);
+egl_closed = imclose(egl_ribbon, strel('disk', egl_close_radius_px));
+egl_gap = egl_closed & ~egl_ribbon & all_cerebellum_orig;
+% Reassignment: gap pixel currently IGL, NeuN clearly low, near pia
+egl_iEGL_gain = egl_gap & (set_bin == 4) & (c_local < 0.35) ...
+                        & (pia_dist_um < 50) & (a_nf > a_level);
+egl_oEGL_gain = egl_gap & (set_bin == 4) & (c_local < 0.35) ...
+                        & (pia_dist_um < 50) & ~(a_nf > a_level);
+set_bin(egl_iEGL_gain) = 2;
+set_bin(egl_oEGL_gain) = 3;
+
+% --- IGL ribbon ---
+igl_ribbon = (set_bin == 4);   % refresh after EGL adjudication
+igl_closed = imclose(igl_ribbon, strel('disk', igl_close_radius_px));
+igl_gap = igl_closed & ~igl_ribbon & all_cerebellum_orig;
+% Reassignment: gap pixel currently EGL, NeuN moderately high, deep tissue.
+% c_local > 0.55 is between iEGL q75 (0.54) and IGL q5 (0.38) — sits in the
+% overlap zone but combined with the gap-fill + topology constraints,
+% should specifically fire on chunks of misclassified IGL.
+igl_gain = igl_gap & ((set_bin == 2) | (set_bin == 3)) & (c_local > 0.55) ...
+                   & (pia_dist_um > 50);
+set_bin(igl_gain) = 4;
+
+fprintf('Ribbon discontinuity (V4): EGL+%d (%.3f%%), IGL+%d (%.3f%%)\n', ...
+    sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)), ...
+    100*(sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)))/numel(set_bin), ...
+    sum(igl_gain(:)), 100*sum(igl_gain(:))/numel(set_bin));
+
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy
 set_bin(anomaly_mask == 1) = 9;

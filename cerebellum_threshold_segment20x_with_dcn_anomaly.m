@@ -1017,6 +1017,40 @@ set_bin(dwl_at_surface & ~(a_nf > a_level)) = 3;
 fprintf('DWL at surface reclaim: %d px (%.3f%%)\n', ...
     sum(dwl_at_surface(:)), 100*sum(dwl_at_surface(:))/numel(set_bin));
 
+%% EGL-AT-CUT-SURFACE RECLAIM
+% User: "we still need to fix the EGL over the cut surface of the DWL / DCN".
+% At a microtome cut surface, DWL/DCN tissue is exposed at the edge. The
+% EGL detector picks up DAPI signal there and incorrectly labels it as EGL.
+%
+% Anatomical constraint: in NORMAL morphology, EGL has at least 50 um of
+% ML/PCL/IGL between it and DWL/DCN — even in thin folium tips. So EGL
+% pixels DIRECTLY ADJACENT to DWL/DCN (within ~30 um, with no ML buffer)
+% are anatomically impossible — they're on a cut surface.
+%
+% Dual-evidence rule (both must hold):
+%   (1) EGL pixel within 30 um of a DWL or DCN label
+%   (2) Signal supports DWL: combined raw intensity < 0.30 (dim)
+%       OR signal supports DCN: raw NeuN > 0.4 AND combined > 0.20
+% This catches cut-surface mis-EGL while preserving folium-tip EGL where
+% DWL is far enough away or signal is genuinely EGL-like (high DAPI, low
+% NeuN).
+b_raw_for_cut = mat2gray(double(b));
+combined_raw_for_cut = (mat2gray(double(a)) + b_raw_for_cut + mat2gray(double(c))) / 3;
+egl_mask_now = (set_bin == 2) | (set_bin == 3);
+dwl_dcn_mask = (set_bin == 6) | (set_bin == 8);
+dist_from_dwl_dcn_um = bwdist(dwl_dcn_mask) * 0.5119049;
+% Topology: within 30 um of DWL/DCN
+near_dwl_dcn = dist_from_dwl_dcn_um < 30;
+% Signal options: dim (DWL-like) OR NeuN+ (DCN-like) — NOT EGL-like
+signal_supports_dwl = combined_raw_for_cut < 0.30;
+signal_supports_dcn = (c_raw > 0.4) & (combined_raw_for_cut > 0.20);
+egl_at_cut = egl_mask_now & near_dwl_dcn & (signal_supports_dwl | signal_supports_dcn);
+% Reassign: dim -> DWL, NeuN+ -> DCN
+set_bin(egl_at_cut & signal_supports_dwl) = 6;
+set_bin(egl_at_cut & ~signal_supports_dwl & signal_supports_dcn) = 8;
+fprintf('EGL at cut surface reclaim: %d px (%.3f%%)\n', ...
+    nnz(egl_at_cut), 100*nnz(egl_at_cut)/numel(set_bin));
+
 %% LABEL-1 RECLAIM (missing-value propagation, depth-gated)
 % Pixels still labeled "1" (cerebellum, no specific layer) didn't get any
 % layer assignment. Assign them via NEAREST labeled-layer neighbor — but

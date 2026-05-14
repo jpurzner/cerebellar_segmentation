@@ -961,11 +961,31 @@ ml_gain = ml_gap & (set_bin == 4) & (c_local < 0.40) ...
                  & ~(a_nf > a_level) & (pia_dist_um > 30);
 set_bin(ml_gain) = 5;
 
-fprintf('Ribbon discontinuity (V4 directional): EGL+%d (%.3f%%), IGL+%d (%.3f%%), ML+%d (%.3f%%)\n', ...
+% --- DWL fingers (NEW) ---
+% DWL is structurally a TREE/branching pattern (the cerebellar white matter
+% arbor), not a smooth ribbon — but the same multi-angle directional close
+% bridges along the local branch direction. The user observed: "the tips of
+% the fingers are getting misassigned" — closing extends each finger along
+% its trajectory and reclaims any ML tips that should be DWL.
+%
+% DWL signal: dim across all 3 channels (low DAPI - sparse cells, no p27,
+% no NeuN). Use raw-channel combined intensity for discrimination — ML is
+% brighter (parallel fibers + interneurons keep DAPI/NeuN moderate).
+combined_raw = (mat2gray(double(a)) + mat2gray(double(b)) + mat2gray(double(c))) / 3;
+
+dwl_ribbon = (set_bin == 6);
+dwl_closed = ribbon_dir_close(dwl_ribbon);
+dwl_gap = dwl_closed & ~dwl_ribbon & all_cerebellum_orig;
+% Reclaim from ML where combined intensity is low (DWL-like) and deep
+dwl_gain = dwl_gap & (set_bin == 5) & (combined_raw < 0.25) & (pia_dist_um > 50);
+set_bin(dwl_gain) = 6;
+
+fprintf('Ribbon discontinuity (V4 directional): EGL+%d (%.3f%%), IGL+%d (%.3f%%), ML+%d (%.3f%%), DWL+%d (%.3f%%)\n', ...
     sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)), ...
     100*(sum(egl_iEGL_gain(:)) + sum(egl_oEGL_gain(:)))/numel(set_bin), ...
     sum(igl_gain(:)), 100*sum(igl_gain(:))/numel(set_bin), ...
-    sum(ml_gain(:)), 100*sum(ml_gain(:))/numel(set_bin));
+    sum(ml_gain(:)), 100*sum(ml_gain(:))/numel(set_bin), ...
+    sum(dwl_gain(:)), 100*sum(dwl_gain(:))/numel(set_bin));
 
 %% DCN ANATOMICAL CONSTRAINT
 % Deep Cerebellar Nuclei are by definition DEEP — they live in the white
@@ -982,6 +1002,20 @@ set_bin(dcn_at_surface & (a_nf > a_level)) = 2;
 set_bin(dcn_at_surface & ~(a_nf > a_level)) = 3;
 fprintf('DCN at surface reclaim: %d px (%.3f%%)\n', ...
     sum(dcn_at_surface(:)), 100*sum(dcn_at_surface(:))/numel(set_bin));
+
+%% DWL ANATOMICAL CONSTRAINT
+% DWL is the deep white matter — it should never appear at the surface.
+% User reported: "2018_05_22_s2_5 shows persistent DWL on the outer surface".
+% Same anatomical impossibility as DCN-at-surface: DWL within ~30 um of
+% pia is detector over-extension into EGL territory.
+% (DWL gets a tighter threshold than DCN because DWL legitimately sits
+% closer to surface in some folium tips than DCN does.)
+dwl_at_surface = (set_bin == 6) & (pia_dist_um < 30);
+% Reassign to iEGL/oEGL based on local p27 — these are surface pixels
+set_bin(dwl_at_surface & (a_nf > a_level)) = 2;
+set_bin(dwl_at_surface & ~(a_nf > a_level)) = 3;
+fprintf('DWL at surface reclaim: %d px (%.3f%%)\n', ...
+    sum(dwl_at_surface(:)), 100*sum(dwl_at_surface(:))/numel(set_bin));
 
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy

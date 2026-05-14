@@ -1017,6 +1017,40 @@ set_bin(dwl_at_surface & ~(a_nf > a_level)) = 3;
 fprintf('DWL at surface reclaim: %d px (%.3f%%)\n', ...
     sum(dwl_at_surface(:)), 100*sum(dwl_at_surface(:))/numel(set_bin));
 
+%% EGL-AT-DEPTH ANATOMICAL RECLAIM
+% User: "the EGL spreading across the base of the cerebellum where there
+% should only be DWL will need to be solved". The depth-gated label-1
+% reclaim already prevents the propagation path, but EGL labels from the
+% original EGL detector (egl_norm + adaptive threshold) can still appear
+% at deep tissue when igl_in_mask doesn't fully cover the deep regions.
+%
+% Anatomical fact: EGL is the OUTER layer, lives within ~30 um of pia.
+% In folium tips the local pia_dist is still small. EGL labels with
+% pia_dist > 150 um are deep tissue.
+%
+% Two-condition rule (both required to reassign):
+%   (1) pia_dist > 150 um (clearly deep)
+%   (2) signal STRONGLY disagrees with EGL (high NeuN OR very-low DAPI)
+% Real EGL has low NeuN AND high DAPI. A "deep EGL" pixel that ALSO has
+% EGL-like signal might be a real folium-tip EGL — we leave those alone.
+% Only the clearly-misclassified deep EGL gets reassigned.
+b_raw_for_egl = mat2gray(double(b));   % DAPI raw normalized
+egl_at_depth = ((set_bin == 2) | (set_bin == 3)) & (pia_dist_um > 150);
+% Signal disagrees with EGL: NeuN clearly positive OR DAPI clearly low
+egl_signal_wrong = (c_raw > 0.4) | (b_raw_for_egl < 0.15);
+egl_to_reassign = egl_at_depth & egl_signal_wrong;
+% Now decide target based on signal
+egl_at_depth_to_igl = egl_to_reassign & (c_raw > 0.4);
+egl_at_depth_to_dwl = egl_to_reassign & ~egl_at_depth_to_igl & (combined_raw < 0.25);
+egl_at_depth_to_ml  = egl_to_reassign & ~egl_at_depth_to_igl & ~egl_at_depth_to_dwl;
+set_bin(egl_at_depth_to_igl) = 4;
+set_bin(egl_at_depth_to_dwl) = 6;
+set_bin(egl_at_depth_to_ml)  = 5;
+fprintf('EGL at depth reclaim: ->IGL %d, ->DWL %d, ->ML %d (total %d, %.3f%%)\n', ...
+    nnz(egl_at_depth_to_igl), nnz(egl_at_depth_to_dwl), ...
+    nnz(egl_at_depth_to_ml), nnz(egl_to_reassign), ...
+    100*nnz(egl_to_reassign)/numel(set_bin));
+
 %% LABEL-1 RECLAIM (missing-value propagation, depth-gated)
 % Pixels still labeled "1" (cerebellum, no specific layer) didn't get any
 % layer assignment. Assign them via NEAREST labeled-layer neighbor — but

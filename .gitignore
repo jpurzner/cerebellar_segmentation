@@ -63,6 +63,7 @@ python/matlab_*/
 python/anomaly_explore*/
 python/variant_test/
 python/port_vs_matlab_10x/
+python/test_continuity/
 
 # Logs
 *.log

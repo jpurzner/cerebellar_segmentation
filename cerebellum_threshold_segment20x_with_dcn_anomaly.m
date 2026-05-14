@@ -1100,6 +1100,33 @@ if n_unassigned > 0
         n_unassigned, sum(can_assign(:)), 100*sum(can_assign(:))/numel(set_bin));
 end
 
+%% ORPHAN FRAGMENT CLEANUP (continuity-driven)
+% Continuity tests revealed ML/IGL/EGL break into many small components
+% (largest CC often only 15-50% of total). Many are "orphans" — small
+% isolated chunks of the wrong label inside a different layer's territory.
+%
+% For each ribbon layer (EGL union, IGL, ML), find small isolated components
+% (< 2000 px^2 = ~520 um^2) and reassign each to its dominant boundary
+% neighbor label. This addresses the ML-in-DWL and IGL-in-EGL fragments.
+
+% (orphan_cleanup is defined as a local function at end of file)
+orphan_max_area = round(500 / (0.5119049^2));    % ~1909 px (500 um^2)
+
+n_before = nnz(set_bin == 5);
+set_bin = orphan_cleanup(set_bin, [5], orphan_max_area);
+ml_orphans_reassigned = n_before - nnz(set_bin == 5);
+
+n_before = nnz(set_bin == 4);
+set_bin = orphan_cleanup(set_bin, [4], orphan_max_area);
+igl_orphans_reassigned = n_before - nnz(set_bin == 4);
+
+n_before = nnz(set_bin == 2 | set_bin == 3);
+set_bin = orphan_cleanup(set_bin, [2 3], orphan_max_area);
+egl_orphans_reassigned = n_before - nnz(set_bin == 2 | set_bin == 3);
+
+fprintf('Orphan cleanup: ML %d, IGL %d, EGL %d (each is total px reassigned)\n', ...
+    ml_orphans_reassigned, igl_orphans_reassigned, egl_orphans_reassigned);
+
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy
 set_bin(anomaly_mask == 1) = 9;
@@ -1246,19 +1273,56 @@ return
 end
 
 function [ im_bin ] = thresh_by_area( im, mask, area_frac )
-%thresh_by_area thresholds the image by the area of a mask that is marked  
+%thresh_by_area thresholds the image by the area of a mask that is marked
 
-% set the values outside the mask to NaN 
+% set the values outside the mask to NaN
 im = double(im);
 im(~(mask)) = nan;
 [pixelCounts , grayLevels] = histcounts(im,500);
-% get high point of histogram (noise) and add the typical width 
-% clip the low pixel counts 
+% get high point of histogram (noise) and add the typical width
+% clip the low pixel counts
 
 high_i = min(find(cumsum(pixelCounts)/sum(sum(mask)) > (1- area_frac)));
 high_in = grayLevels(high_i+1);
 im_bin = im >= high_in;
 return
+end
+
+
+function newlabels = orphan_cleanup(set_bin_in, ribbon_labels, max_area_px)
+% Returns updated set_bin with orphan components of these labels reassigned.
+% ribbon_labels: vector of labels that together form one "ribbon"
+%                (e.g., [2 3] for iEGL+oEGL = EGL)
+% max_area_px:   components <= this size are "orphans" candidate for relabel
+newlabels = set_bin_in;
+ribbon_mask = false(size(set_bin_in));
+for L = ribbon_labels
+    ribbon_mask = ribbon_mask | (set_bin_in == L);
+end
+cc = bwconncomp(ribbon_mask);
+if cc.NumObjects == 0; return; end
+stats = regionprops(cc, 'Area');
+areas = [stats.Area];
+orphan_idx = find(areas <= max_area_px);
+if isempty(orphan_idx); return; end
+
+for k = orphan_idx
+    pixels = cc.PixelIdxList{k};
+    % Build boundary mask: 1-pixel-wide ring around the orphan
+    orphan_mask = false(size(set_bin_in));
+    orphan_mask(pixels) = true;
+    boundary = imdilate(orphan_mask, strel('disk', 2)) & ~orphan_mask;
+    % Count boundary labels (exclude 0 background and same-ribbon labels)
+    b_labels = newlabels(boundary);
+    b_labels = b_labels(b_labels > 0);
+    for L = ribbon_labels
+        b_labels = b_labels(b_labels ~= L);
+    end
+    if isempty(b_labels); continue; end
+    % Mode: most common boundary label
+    new_label = mode(double(b_labels));
+    newlabels(pixels) = new_label;
+end
 end
 
 

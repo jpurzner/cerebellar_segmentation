@@ -967,6 +967,22 @@ fprintf('Ribbon discontinuity (V4 directional): EGL+%d (%.3f%%), IGL+%d (%.3f%%)
     sum(igl_gain(:)), 100*sum(igl_gain(:))/numel(set_bin), ...
     sum(ml_gain(:)), 100*sum(ml_gain(:))/numel(set_bin));
 
+%% DCN ANATOMICAL CONSTRAINT
+% Deep Cerebellar Nuclei are by definition DEEP — they live in the white
+% matter at the base of the cerebellum. A DCN label within ~50 um of the
+% pial surface is anatomically impossible. These are almost certainly
+% DCN-detector over-extension (the close+fill operations expanding the
+% NeuN+ DWL seed past the dwl_interior boundary into adjacent EGL).
+%
+% The ribbon adjudication can't catch this because DCN's high NeuN signal
+% trips the "EGL must have low NeuN" gate. Use topology alone.
+dcn_at_surface = (set_bin == 8) & (pia_dist_um < 50);
+% Reassign to iEGL or oEGL based on local p27
+set_bin(dcn_at_surface & (a_nf > a_level)) = 2;
+set_bin(dcn_at_surface & ~(a_nf > a_level)) = 3;
+fprintf('DCN at surface reclaim: %d px (%.3f%%)\n', ...
+    sum(dcn_at_surface(:)), 100*sum(dcn_at_surface(:))/numel(set_bin));
+
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy
 set_bin(anomaly_mask == 1) = 9;

@@ -1017,35 +1017,86 @@ set_bin(dwl_at_surface & ~(a_nf > a_level)) = 3;
 fprintf('DWL at surface reclaim: %d px (%.3f%%)\n', ...
     sum(dwl_at_surface(:)), 100*sum(dwl_at_surface(:))/numel(set_bin));
 
-%% LABEL-1 RECLAIM (missing-value propagation)
+%% LABEL-1 RECLAIM (missing-value propagation, depth-gated)
 % Pixels still labeled "1" (cerebellum, no specific layer) didn't get any
-% layer assignment from the primary detectors. Assign them based on the
-% NEAREST labeled-layer neighbor in 2D — propagation across small unlabeled
-% regions inside the cereb mask.
-% Conservative: only reassign pixels within 50 um (100 px at 20x) of a
-% labeled neighbor. Unlabeled regions FURTHER than that are likely large
-% missed regions that need a different mechanism (will surface in
-% continuity tests).
+% layer assignment. Assign them via NEAREST labeled-layer neighbor — but
+% gate by ANATOMICAL DEPTH so we don't propagate EGL into deep DWL or
+% propagate DWL into EGL territory.
+%
+% User: "we are now putting an EGL across the base of the cerebellum where
+% there is DWL". Original V1 (committed in 552db4f) was depth-blind —
+% nearest neighbor could pick EGL even for deep pixels.
+%
+% V2 depth-gated rule:
+%   pixel pia_dist < 30 um (surface)  -> any of {iEGL, oEGL, IGL}
+%   pixel pia_dist 30-80 um (mid)     -> any of {iEGL, oEGL, ML, IGL, PCL}
+%   pixel pia_dist > 80 um (deep)     -> only {IGL, ML, DWL, PCL, DCN} (NO EGL)
+% PCL and DCN allowed at all depths (they're cell-body classes that can
+% appear within the relevant ribbon regardless of position).
 unassigned = (set_bin == 1);
 n_unassigned = sum(unassigned(:));
 if n_unassigned > 0
-    layer_labels = [2, 3, 4, 5, 6, 7, 8];   % iEGL,oEGL,IGL,ML,DWL,PCL,DCN
-    nearest_dist = inf(size(set_bin));
+    % Allowed-label sets per depth zone
+    surface_labels  = [2, 3, 4, 7];          % iEGL, oEGL, IGL, PCL
+    mid_labels      = [2, 3, 4, 5, 6, 7, 8]; % all biological
+    deep_labels     = [4, 5, 6, 7, 8];       % IGL, ML, DWL, PCL, DCN (NO EGL)
+
+    % Compute zone masks
+    surface_zone = pia_dist_um <  30;
+    mid_zone     = (pia_dist_um >= 30) & (pia_dist_um <= 80);
+    deep_zone    = pia_dist_um >  80;
+
+    % For each zone, compute nearest allowed label
+    nearest_dist  = inf(size(set_bin));
     nearest_label = zeros(size(set_bin), 'uint8');
-    for L = layer_labels
+
+    % Surface zone candidates
+    nd_s = inf(size(set_bin));  nl_s = zeros(size(set_bin), 'uint8');
+    for L = surface_labels
         layer_mask = (set_bin == L);
         if any(layer_mask(:))
             d = bwdist(layer_mask);
-            mask_closer = d < nearest_dist;
-            nearest_dist(mask_closer) = d(mask_closer);
-            nearest_label(mask_closer) = L;
+            closer = d < nd_s;
+            nd_s(closer) = d(closer);
+            nl_s(closer) = L;
         end
     end
-    % Distance limit: only assign if a labeled neighbor is within 50 um
+    % Mid zone candidates
+    nd_m = inf(size(set_bin));  nl_m = zeros(size(set_bin), 'uint8');
+    for L = mid_labels
+        layer_mask = (set_bin == L);
+        if any(layer_mask(:))
+            d = bwdist(layer_mask);
+            closer = d < nd_m;
+            nd_m(closer) = d(closer);
+            nl_m(closer) = L;
+        end
+    end
+    % Deep zone candidates (no EGL allowed)
+    nd_d = inf(size(set_bin));  nl_d = zeros(size(set_bin), 'uint8');
+    for L = deep_labels
+        layer_mask = (set_bin == L);
+        if any(layer_mask(:))
+            d = bwdist(layer_mask);
+            closer = d < nd_d;
+            nd_d(closer) = d(closer);
+            nl_d(closer) = L;
+        end
+    end
+
+    % Combine: pick the right nearest_label based on zone
+    nearest_label(surface_zone) = nl_s(surface_zone);
+    nearest_dist(surface_zone)  = nd_s(surface_zone);
+    nearest_label(mid_zone)     = nl_m(mid_zone);
+    nearest_dist(mid_zone)      = nd_m(mid_zone);
+    nearest_label(deep_zone)    = nl_d(deep_zone);
+    nearest_dist(deep_zone)     = nd_d(deep_zone);
+
+    % Distance limit: only assign within 50 um of a valid neighbor
     max_dist_px = round(50 / 0.5119049);    % ~98 px
     can_assign = unassigned & (nearest_dist <= max_dist_px);
     set_bin(can_assign) = nearest_label(can_assign);
-    fprintf('Label-1 reclaim: %d unassigned, %d propagated (%.3f%%)\n', ...
+    fprintf('Label-1 reclaim (depth-gated): %d unassigned, %d propagated (%.3f%%)\n', ...
         n_unassigned, sum(can_assign(:)), 100*sum(can_assign(:))/numel(set_bin));
 end
 

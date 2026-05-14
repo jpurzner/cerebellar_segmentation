@@ -1017,6 +1017,38 @@ set_bin(dwl_at_surface & ~(a_nf > a_level)) = 3;
 fprintf('DWL at surface reclaim: %d px (%.3f%%)\n', ...
     sum(dwl_at_surface(:)), 100*sum(dwl_at_surface(:))/numel(set_bin));
 
+%% LABEL-1 RECLAIM (missing-value propagation)
+% Pixels still labeled "1" (cerebellum, no specific layer) didn't get any
+% layer assignment from the primary detectors. Assign them based on the
+% NEAREST labeled-layer neighbor in 2D — propagation across small unlabeled
+% regions inside the cereb mask.
+% Conservative: only reassign pixels within 50 um (100 px at 20x) of a
+% labeled neighbor. Unlabeled regions FURTHER than that are likely large
+% missed regions that need a different mechanism (will surface in
+% continuity tests).
+unassigned = (set_bin == 1);
+n_unassigned = sum(unassigned(:));
+if n_unassigned > 0
+    layer_labels = [2, 3, 4, 5, 6, 7, 8];   % iEGL,oEGL,IGL,ML,DWL,PCL,DCN
+    nearest_dist = inf(size(set_bin));
+    nearest_label = zeros(size(set_bin), 'uint8');
+    for L = layer_labels
+        layer_mask = (set_bin == L);
+        if any(layer_mask(:))
+            d = bwdist(layer_mask);
+            mask_closer = d < nearest_dist;
+            nearest_dist(mask_closer) = d(mask_closer);
+            nearest_label(mask_closer) = L;
+        end
+    end
+    % Distance limit: only assign if a labeled neighbor is within 50 um
+    max_dist_px = round(50 / 0.5119049);    % ~98 px
+    can_assign = unassigned & (nearest_dist <= max_dist_px);
+    set_bin(can_assign) = nearest_label(can_assign);
+    fprintf('Label-1 reclaim: %d unassigned, %d propagated (%.3f%%)\n', ...
+        n_unassigned, sum(can_assign(:)), 100*sum(can_assign(:))/numel(set_bin));
+end
+
 set_bin(pc_bin_filt == 1) = 7;
 % Anomaly regions OVERRIDE all biological labels — they're untrustworthy
 set_bin(anomaly_mask == 1) = 9;

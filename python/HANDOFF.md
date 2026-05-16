@@ -475,7 +475,116 @@ cd python/dino
 
 ---
 
-## Repo status (16 commits ahead of original)
+## Next phase — shape-based layer completion (user's plan)
+
+**The biggest current problem after iter-6:** we are losing sections of
+EGL, ML, and IGL to other layers. The continuity tests (§3 / iter-3)
+show this clearly:
+- EGL largest component: typically 56-96% of total EGL
+- **ML largest component: 15-50% of total ML** (badly fragmented)
+- IGL largest component: 42-54%
+
+The remaining fragmentation is largely from BIG missing pieces — chunks
+of one folium where a layer was misclassified into a neighbor (e.g.,
+ML chunk eaten by DWL, EGL chunk eaten by IGL). The orphan cleanup
+(iter-4) handles small fragments but not these.
+
+**User's plan:** train a model that takes the SHAPES of the existing
+detected layers and predicts where the missing pieces should be.
+
+This is shape-based completion / topology-aware inpainting. The model
+exploits the fact that each ribbon has a predictable continuous shape
+following the folium morphology, and detected gaps in a ribbon usually
+correspond to misclassifications nearby (the missing piece got
+labeled as a different layer rather than disappearing).
+
+### Why this is the right approach
+
+1. **The fragmentation pattern is non-random.** Big breaks happen at
+   specific anatomical boundaries (EGL/IGL contact in EZH2 cKO,
+   ML/DWL boundary in white matter fingers, cut surfaces).
+2. **The shape constraints are strong.** EGL must be a closed-curve
+   ribbon wrapping the cerebellum. ML must be a parallel ribbon
+   inside EGL. IGL must be inside ML/PCL. DWL must be a branching
+   tree at the core.
+3. **Signal-only rules failed.** We exhausted the signal-based
+   approaches (multiple iter-1 attempts, iter-5 V4). The remaining
+   information must come from SHAPE.
+
+### Data available for training
+
+Already exported (one binary uint8 TIFF per slide, 19 slides total):
+- `python/egl_full_masks/<slide>_egl_full.tif` — entire EGL ribbon
+- `python/egl_boundary_masks/<slide>_egl_outer.tif` — pia-side line
+- `python/egl_boundary_masks/<slide>_egl_inner.tif` — deep-side line
+- `python/egl_boundary_masks/<slide>_egl_skel.tif` — centerline
+
+**Not yet exported** (likely needed for the shape-prediction model):
+- ML full binary masks
+- IGL full binary masks
+- DWL full binary masks
+- DCN full binary masks (probably less critical — DCN is a clean
+  blob detector)
+- PCL — probably too sparse to be useful as ribbon shape
+
+**Suggested next step:** generalize `render_egl_full_mask.py` to
+export all layers as separate binary mask sets. The
+`render_egl_boundary_mask.py` could similarly generalize to give
+inner/outer lines for ML and IGL (since they're ribbons too).
+
+Easy script extension: parameterize the layer set in those scripts.
+
+### Models to consider for shape-based completion
+
+Brainstorm — none of these has been tried yet:
+
+1. **U-Net with multi-layer input/output.** Input: RGB + all 9 layer
+   masks at current state. Output: corrected 9-class segmentation.
+   Standard supervised setup if you have enough gold. PROBLEM: only
+   1 gold-corrected slide.
+2. **Self-supervised / weakly-supervised shape completion.** Train
+   to predict each layer's binary mask given the other layers'
+   masks (mask one layer out, predict it from the rest). This
+   leverages the strong cross-layer geometric constraints. Works
+   with the 18 non-gold slides too.
+3. **Deformable atlas registration.** Build a parametric template
+   of the cerebellar folium structure and warp it to fit each
+   slide. Use the warped atlas as a prior for layer assignment.
+4. **Conditional shape model (e.g., diffusion or autoregressive).**
+   Given the partial layer masks + RGB, generate the most likely
+   completed layer mask. More expressive than U-Net for complex
+   shape priors.
+5. **Graph-based ribbon completion.** Treat each ribbon as a graph
+   of connected components, learn to merge components that should
+   be one continuous ribbon (essentially learned orphan-cleanup).
+
+### Specific failure modes the model should target
+
+(from continuity tests + user observations)
+
+1. **ML splits into 2-6 large pieces** (not many small ones) — see
+   `python/test_continuity/<slide>_metrics.txt`. Largest_pct stuck
+   at ~30%.
+2. **IGL splits into similar-sized halves** across the folium —
+   often a PCL "bridge" separates the halves.
+3. **EGL missing in deep invaginations** (e.g., s2_2 right side
+   per user feedback at iter-5 V4 attempt).
+4. **EGL crossing cut surfaces** (iter-6 partially addresses but
+   not fully; some cases still slip through with EGL-like signal).
+5. **DWL/ML boundary errors** (iter-1 abandoned — needs this model
+   approach).
+
+### Don't repeat these dead ends
+
+Pure signal-based discrimination of layers with overlapping NeuN
+distributions (EGL vs IGL, ML vs DWL) — already exhaustively tried.
+The new model should use SPATIAL CONTEXT (relative positions of
+other layers) as the primary signal, with channel intensity as
+auxiliary.
+
+---
+
+## Repo status (17 commits ahead of original)
 
 Each commit is anchored to a specific user concern. Recent ones in
 order:

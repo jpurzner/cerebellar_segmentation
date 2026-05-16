@@ -67,6 +67,7 @@ python/test_continuity/
 python/egl_lines/
 python/egl_boundary_masks/
 python/egl_full_masks/
+python/layer_masks/
 python/matlab_anomaly_10x/
 
 # Logs

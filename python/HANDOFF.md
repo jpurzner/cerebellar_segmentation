@@ -568,6 +568,15 @@ Brainstorm — none of these has been tried yet:
    of connected components, learn to merge components that should
    be one continuous ribbon (essentially learned orphan-cleanup).
 
+### First attempt: depth-band model (`python/depth_model/`)
+
+A depth-coordinate version of idea 3: unroll the cortex into
+(arclength along oEGL, Laplace depth from oEGL to DWL), learn per-layer
+depth bands from the 11 10x slides, and relabel pixels whose depth
+disagrees with their label. It relabels 0.65 % of cortex pixels on the
+10x set, mostly at the ML/IGL boundary. It does not yet fill unassigned
+(label 1) or anomaly pixels. See `python/depth_model/README.md`.
+
 ### Specific failure modes the model should target
 
 (from continuity tests + user observations)

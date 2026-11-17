@@ -49,7 +49,7 @@ def _dapi_rel(lab, ch):
 
 # ----------------------------------------------------------------------------- step 1
 def egl_rescue(lab, ch, um, dapi_thr=0.6, neun_thr=0.5, max_igl_um=100., min_area=50,
-               sources=(DCN,), dwl_dapi_thr=1.0):
+               sources=(DCN,), dwl_dapi_thr=1.0, link_gap_um=20.):
     """Return DCN (and optionally DWL) pixels with EGL-like signal to the EGL ribbon."""
     lab = lab.copy()
     egl = np.isin(lab, EGL)
@@ -67,7 +67,13 @@ def egl_rescue(lab, ch, um, dapi_thr=0.6, neun_thr=0.5, max_igl_um=100., min_are
     if max_igl_um:       # pial EGL has IGL beneath it; a cut white-matter edge does not
         cand &= ndi.distance_transform_edt(lab != IGL) * um <= max_igl_um
     cand = morphology.remove_small_objects(cand, max_size=min_area)
-    grown = ndi.binary_propagation(egl, mask=egl | cand) & cand
+    if link_gap_um:   # same ribbon-continuity tolerance as the anchors: short gaps allowed
+        rad = max(int(round(link_gap_um / 2 / um)), 1)
+        ccE = measure.label(ndi.binary_dilation(egl | cand, iterations=rad), connectivity=2)
+        ok = np.unique(ccE[egl])
+        grown = cand & np.isin(ccE, ok[ok > 0])
+    else:
+        grown = ndi.binary_propagation(egl, mask=egl | cand) & cand
     pi, po = _med(ch["p27"], lab == 2), _med(ch["p27"], lab == 3)
     is_i = ch["p27"] > 0.5 * (pi + po)                # iEGL is the p27-high half
     lab[grown & is_i] = 2

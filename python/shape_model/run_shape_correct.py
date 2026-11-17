@@ -10,6 +10,7 @@ Outputs (python/shape_model/out/, gitignored):
     _SUMMARY.txt               per-slide change counts and top transitions
 """
 from __future__ import annotations
+import os
 import sys
 from pathlib import Path
 import numpy as np
@@ -21,13 +22,18 @@ from scipy import ndimage as ndi
 
 HERE = Path(__file__).resolve().parent
 PY = HERE.parent
+# Data (label maps, gold) is gitignored and lives next to the code in the main checkout;
+# set CEREB_PY_DATA to point elsewhere (e.g. when running from a git worktree).
+DATA = Path(os.environ.get("CEREB_PY_DATA", PY))
+if not (DATA / "matlab_anomaly").exists():
+    DATA = Path("/Users/jpurzner/Dropbox/imaging_analysis/cerebellar_segmentation/python")
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(PY / "dino"))
 import shape_correct as sc
 from slide_manifest import manifest
 
 OUT = HERE / "out"
-LABELS = {"20x": PY / "matlab_anomaly" / "sandbox", "10x": PY / "matlab_anomaly_10x" / "sandbox"}
+LABELS = {"20x": DATA / "matlab_anomaly" / "sandbox", "10x": DATA / "matlab_anomaly_10x" / "sandbox"}
 WORK_UM = 1.0          # work at ~1 um/px: 20x -> ds 2, 10x -> ds 1
 COLORS = np.array([[0, 0, 0], [30, 30, 90], [100, 180, 250], [0, 210, 230], [255, 235, 40],
                    [140, 230, 140], [255, 140, 20], [230, 20, 20], [140, 70, 200],

@@ -4,6 +4,7 @@ Gold uses 4=ML, 5=IGL (swapped vs the canonical index) and has no DCN, so gold i
 swapped to canonical and DCN is merged into DWL before IoU. Evaluated at ds=2 (~1 um/px).
 """
 from __future__ import annotations
+import os
 import sys
 from pathlib import Path
 import numpy as np
@@ -11,12 +12,17 @@ import tifffile
 
 HERE = Path(__file__).resolve().parent
 PY = HERE.parent
+# Data (label maps, gold) is gitignored and lives next to the code in the main checkout;
+# set CEREB_PY_DATA to point elsewhere (e.g. when running from a git worktree).
+DATA = Path(os.environ.get("CEREB_PY_DATA", PY))
+if not (DATA / "matlab_anomaly").exists():
+    DATA = Path("/Users/jpurzner/Dropbox/imaging_analysis/cerebellar_segmentation/python")
 sys.path.insert(0, str(HERE))
 import shape_correct as sc
 
 SID = "2018_05_22_s1_2_p27-0021"
-GOLD = PY / "labelled" / f"{SID}_labelled.tiff"
-PRED = PY / "matlab_anomaly" / "sandbox" / f"{SID}_native_labels.tif"
+GOLD = DATA / "labelled" / f"{SID}_labelled.tiff"
+PRED = DATA / "matlab_anomaly" / "sandbox" / f"{SID}_native_labels.tif"
 IMG = Path("/Users/jpurzner/Dropbox/images/edu_repeat/p27") / SID / f"{SID}_fused_crop.tif"
 DS, UM = 2, 0.5119049 * 2
 

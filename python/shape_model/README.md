@@ -22,8 +22,10 @@ Work at about 1 µm/px (20x downsampled ×2, 10x native).
 1. **EGL rescue from DCN.** The iter-6 cut-surface step turned real EGL into DCN when the
    EGL touched DWL (on s1_2 about half of all DCN pixels are gold EGL). DCN pixels are
    returned to EGL when they are EGL-dense (DAPI above 0.6 on a scale where slide-median
-   DWL = 0 and EGL = 1), NeuN-low, within 100 µm of IGL, and connected to the existing EGL.
-   iEGL vs oEGL is set by p27. 94 % of these pixels are gold EGL.
+   DWL = 0 and EGL = 1), NeuN-low, within 100 µm of IGL, and connected to the existing EGL
+   across gaps under 20 µm. iEGL vs oEGL is set by p27. 92 % of these pixels are gold EGL.
+   The gap tolerance catches the broken DCN strips along s1_2's left folium and the s2_2
+   fissure: +0.005 ML, +0.006 DWL.
 2. **Anchors.** The trusted EGL is:
    - components touching the outer surface;
    - ribbons of 8000 µm² or more (EGL lining a closed fissure);
@@ -65,11 +67,29 @@ the open issues below.
 | IoU | ML | PCL | DWL | EGL | iEGL | oEGL | IGL |
 |---|---|---|---|---|---|---|---|
 | MATLAB iter-6 | 0.631 | 0.476 | 0.722 | 0.731 | 0.558 | 0.446 | 0.906 |
-| shape-corrected | **0.714** | **0.508** | **0.813** | **0.747** | 0.566 | 0.448 | 0.906 |
-| same, with orphan EGL deletion on | 0.730 | 0.509 | 0.840 | 0.759 | 0.577 | 0.451 | 0.906 |
+| shape-corrected | **0.719** | **0.508** | **0.819** | **0.749** | 0.566 | 0.451 | 0.906 |
+| same, with orphan EGL deletion on (measured before the gap-tolerant rescue) | 0.730 | 0.509 | 0.840 | 0.759 | 0.577 | 0.451 | 0.906 |
 
-- **Changed pixels:** 133k, 3.8 % of tissue. 79 % are now correct; 4 % were correct before.
-- **Gold ML labelled DWL:** 77.7k → 32.8k. **Gold DWL labelled ML:** 65.1k → 32.0k.
+- **Changed pixels:** 140k, 4.0 % of tissue. 80 % are now correct; 3 % were correct before.
+- **Gold ML labelled DWL:** 77.7k → 27.9k. **Gold DWL labelled ML:** 65.1k → 32.3k.
+
+### What is still wrong on s1_2
+
+13 % of gold-labelled tissue (ds2), in order:
+
+| Error | Pixels | Notes |
+|---|---|---|
+| oEGL called iEGL | 113k | Not fixable with the rules below. |
+| PCL↔ML | 62k | Thin boundary noise, not chunks. |
+| ML↔DWL | 60k | Mostly 3 blobs, see below. |
+| IGL↔DWL | 45k | |
+| ML↔IGL | 35k | |
+
+The ML↔DWL blobs:
+- A folium tip where gold ML borders white matter with no EGL. The betweenness gate blocks
+  this by design.
+- The white-matter finger, which needs orphan EGL deletion.
+- A NeuN-dark finger inside the IGL.
 
 ## What was tried and dropped (s1_2 gold unless noted)
 
@@ -89,15 +109,33 @@ the open issues below.
 - **Protecting EGL fragments by DAPI alone** failed: stray EGL patches in s1_2 white matter
   and fissure EGL fragments in s2_2 have the same DAPI and NeuN. Gap-linking (20 µm)
   separates them; DAPI doesn't.
-
 - **Blocking DWL→ML by original white-matter thickness** didn't separate the s4_C trunk
   (49–56 µm half-width) from the correct s1_2 fixes (30–72 µm).
+- **Re-splitting iEGL/oEGL by the p27/DAPI ratio.**
+  - The misassigned oEGL is DAPI-saturated with middling p27, and the ratio does
+    distinguish gold oEGL (~0.35) from iEGL (~0.8).
+  - But oEGL IoU rises only as much as iEGL falls (sum 1.01 → 1.01 at best).
+  - Splitting by depth within the EGL ribbon was much worse (sum 0.62–0.78).
+  - The MATLAB p27 split is the best of everything tried.
+- **IGL rescue (EGL/DCN with IGL-level NeuN → IGL), aimed at the s4_C band.**
+  - From EGL: wrong. Differentiating iEGL already has some NeuN, so it moved surface and
+    fissure iEGL into IGL on s2_4 and s5_E.
+  - From DCN only: never reached the s4_C band, because it isn't connected to IGL.
+  - Removed.
+- **Refining IGL boundaries by local NeuN** (5–15 µm bands, 5–15 µm smoothing) made every
+  class worse (IGL 0.906 → 0.80–0.85, PCL 0.51 → 0.35–0.41). The painted gold boundaries
+  are smoother than the signal.
+- **Smoothing label boundaries** (per-class Gaussian vote, σ 1–5 px) made things slightly to
+  clearly worse.
+- **IGL → DWL where NeuN is DWL-like and connected to DWL** was 0 % precise on gold: every
+  converted pixel was gold IGL or ML.
 
 ## Open issues
 
 - **s4_C (10x) trunk.** About 10k px of a white-matter trunk still becomes ML. It is beside a
   band that iter-6 labelled DCN/EGL but whose signal is IGL. The fix belongs upstream:
-  IGL-signal pixels shouldn't be labelled DCN or EGL.
+  IGL-signal pixels shouldn't be labelled DCN or EGL. A post-hoc IGL rescue was tried and
+  dropped (see above).
 
 - **Orphan EGL policy.**
   - What it is: EGL fragments that are not surface-attached, not ribbon-sized and more than
@@ -108,8 +146,8 @@ the open issues below.
   - Off by default until we decide which way to go.
 - **s2_5 centre and upper right, s3_2 fold.** These change the most, and the anatomy is
   ambiguous there. Review the zoom panels.
-- **oEGL labelled iEGL** (gold oEGL 36 % called iEGL) is a systematic rim offset. Shape
-  can't fix it.
+- **oEGL labelled iEGL** (gold oEGL 36 % called iEGL). Neither shape nor the p27/DAPI ratio
+  fixes it. It may need a decision on where the painted oEGL/iEGL boundary should sit.
 - **The continuity test is misleading as a target.** The gold slide's own ML and IGL are
   each in two large halves (largest piece 56 % and 52 %).
 

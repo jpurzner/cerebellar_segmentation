@@ -61,9 +61,10 @@ indices in `imread(file, page)` differ between the 10x and 20x scripts.
 ## Repository layout
 
 ```
-cerebellum_threshold_segment.m              shared helpers (older)
 cerebellum_threshold_segment2.m             ★ 10x classical pipeline (original)
 cerebellum_threshold_segment2_with_dcn.m    10x + DCN class
+cerebellum_threshold_segment2_with_dcn_anomaly.m
+                                            10x + DCN + tear/bleach anomaly
 cerebellum_threshold_segment20x.m           ★ 20x classical pipeline (original)
 cerebellum_threshold_segment20x_with_dcn.m  20x + DCN class
 cerebellum_threshold_segment20x_with_dcn_anomaly.m
@@ -76,9 +77,18 @@ cerebellum_threshold_segment20x_tight_iegl.m
                                             reference)
 
 background_subtract.m, smallfill.m, im_get_overlap.m,
-thresh_by_area.m, get_thresh_by_area_adapt.m, ...
+illumination_cor.m, thresh_by_area.m,
+get_thresh_by_area.m, get_thresh_by_area_adapt.m
                                             shared MATLAB helpers used by
                                             the segmentation scripts
+
+legacy/                                     2018-era MATLAB (superpixel series,
+                                            early wrappers, one-off tools) and
+                                            the area-plot Rmd. Nothing in the
+                                            current pipelines calls these;
+                                            kept for reference. The runners
+                                            only addpath() the repo root, so
+                                            legacy/ is not on the MATLAB path.
 
 python/
 ├── PROJECT_HISTORY.md                      full chronological log of

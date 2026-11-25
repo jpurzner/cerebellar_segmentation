@@ -1,0 +1,246 @@
+<title>Ezh2 cKO Layer Quantification</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lab notebook page. One reading column for text, figures run wider on white plates (they are
+   publication PNGs on white), tables of mouse-level statistics in mono digits. */
+:root {
+  --bg: #f4f6f7; --plate: #ffffff; --ink: #15191d; --ink2: #4f5861; --muted: #7c858d; --rule: #d9dee2;
+  --wt: #2a78d6; --ko: #eb6834; --sig: #e9f1fb; --note: #fff4ec; --note-rule: #f3c6a8;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111416; --plate: #ffffff; --ink: #e6e9eb; --ink2: #aeb6bd; --muted: #87909a; --rule: #2a3035;
+    --wt: #3987e5; --ko: #d95926; --sig: #17283d; --note: #2a1d15; --note-rule: #6b3d22; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111416; --plate: #ffffff; --ink: #e6e9eb; --ink2: #aeb6bd; --muted: #87909a; --rule: #2a3035;
+  --wt: #3987e5; --ko: #d95926; --sig: #17283d; --note: #2a1d15; --note-rule: #6b3d22; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+.text { max-width: 68ch; }
+header { display: grid; gap: 10px; border-bottom: 1px solid var(--rule); padding-bottom: 22px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--cond); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h2 { font: 600 22px/1.25 var(--cond); margin: 0; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--sans); margin: 0; }
+p { margin: 0; }
+.lede { font-size: 17px; color: var(--ink2); max-width: 68ch; }
+section { display: grid; gap: 14px; }
+.chip { display: inline-block; font: 500 12px/1 var(--mono); padding: 4px 7px 3px; border-radius: 3px; color: #fff; vertical-align: 1px; }
+.chip.wt { background: var(--wt); } .chip.ko { background: var(--ko); }
+.note { background: var(--note); border: 1px solid var(--note-rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; max-width: 80ch; }
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.key { border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 4px; min-width: 0; }
+.key .v { font: 500 22px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+.key .l { color: var(--ink2); font-size: 13.5px; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--plate); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; color: #15191d; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid #e6eaed; white-space: nowrap; }
+thead th { font: 500 11.5px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: #59626b; background: #f6f8f9; position: sticky; top: 0; }
+tbody th { text-align: left; font-weight: 500; }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.wt { color: #1f63b5; } td.ko { color: #c2501f; } td.k20 { color: #8a5a3c; }
+tr.sig td, tr.sig th { background: #edf4fd; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+figure { margin: 0; display: grid; gap: 10px; }
+figure .plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 6px; padding: 10px; overflow: hidden; }
+figure img { display: block; width: 100%; height: auto; }
+figcaption { color: var(--ink2); font-size: 14px; max-width: 80ch; display: grid; gap: 6px; }
+figcaption b { color: var(--ink); font-weight: 600; }
+.qc { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+code, .path { font: 13px/1.4 var(--mono); overflow-wrap: anywhere; }
+.muted { color: var(--muted); }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 6px 0; width: 100%; }
+a { color: var(--wt); }
+:focus-visible { outline: 2px solid var(--wt); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">P7 cerebellum · p27 / NeuN / DAPI · 19 sections, 9 mice, 2 litters · 10x 1.0239 µm/px, 20x 0.5119 µm/px</div>
+  <h1>Ezh2 cKO Layer Quantification</h1>
+  <p class="lede">Layer thickness and area, stain intensity per layer, and the shape and orientation of the nuclei in the molecular layer, <span class="chip wt">WT</span> against <span class="chip ko">cKO</span>, measured on the new labels. The 2017 litter (10x) and the 2018 litter (20x) are pooled, with litter as a factor in every test.</p>
+</header>
+
+<section class="note" aria-labelledby="geno">
+  <h2 id="geno">Genotypes, pixel sizes and pooling</h2>
+  <p><b>Genotypes</b> are the paper's, unchanged for the revision (<span class="path">analysis/p27_NeuN_Ezh2_cko_2024_1_09.Rmd</span>). 2017 litter (10x): A, B and E cKO; C, D, F and G WT, and the letter is the mouse. 2018 litter (20x): slide position 1–5 is cKO, cKO, WT, cKO, cKO, so the gold s1_2 is cKO. Only positions 2, 4 and 5 of the 20x slides are labelled, so the pooled set here is 3 WT and 6 cKO mice; the paper's 4 WT / 7 cKO needs the 20x wild type (s1_3, s2_3, s3_3) and position 1 labelled.</p>
+  <p><b>Pixel sizes:</b> 10x 1.0239 µm/px, 20x 0.5119 µm/px, as in the original pipeline and the notebook's <code>scaling_ratio &lt;- 2</code>. Versions 1–5 of this page used 0.65 µm/px for the 10x, so every 10x length here is 1.575× and every area 2.48× theirs. The 10x labels were built at 0.65 and are rescaled, with each µm threshold of the measurement converted; they were not rebuilt.</p>
+  <p><b>Pooling:</b> at the right scale the 2017 cerebella are bigger than the 2018 ones (2017 cKO IGL {{n:IGL_thick_tm_um.ko|.0f}} µm against {{n:IGL_thick_tm_um.k20|.0f}} µm in the 2018 cKO; section area {{n:layers_area_mm2.ko|.1f}} against {{n:layers_area_mm2.k20|.1f}} mm²), so every test is cKO − WT on mouse means with litter as a factor. With no 2018 wild type labelled, the genotype difference still comes from the 2017 litter; the 2018 cKO mice add to the estimate of the spread. The tables also give p without the litter term (inflated by the litter difference) and for the 2017 litter alone.</p>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Section</th><th scope="col">Mouse</th><th scope="col">Genotype</th><th scope="col">Imaging</th><th scope="col">µm per px</th><th scope="col">Columns counted (mm)</th></tr></thead>
+    <tbody>{{geno}}</tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="px">
+  <h2 id="px">Pixel size of the 10x images</h2>
+  <div class="text" style="display:grid;gap:10px">
+    <p>The 10x panoramas carry no scale. Three checks, against the control specimens and the microscope records:</p>
+    <ul>
+      <li><b>Microscope records.</b> The 2017 <span class="path">.zvi</span> files from the same session are 63x/1.4 oil images through a 0.63× camera adapter on an Axio Imager.M2 with an AxioCam MR3 (6.45 µm pixels). The 2018 20x files show the same microscope, camera and adapter (0.5119 µm/px). Each panorama is exactly 5 × 5 full camera frames. 10x on that set-up: 6.45 / (10 × 0.63) = 1.024 µm/px. Version 1's 0.65 came from reading the 63x file as 40x with no adapter.</li>
+      <li><b>Nuclei.</b> The 20x sections, blurred and resampled as a 10x would see them, match the real 10x nuclear texture only at 1.0–1.15 µm/px; at 0.65 the 10x nuclei would be about 40 % smaller than the 20x ones.</li>
+      <li><b>Whole cerebellum against the Allen P7 atlas.</b> The 20x sections fit the atlas at {{n:allen.rel20|.2f}}× its size. At 1.0239 the 10x sections come out {{n:allen.rel10|.2f}}×, WT and cKO alike: the 2017 cerebella are larger, while their nuclei are the same size. That is a litter difference, not a pixel error, and it is why litter is a factor in every test.</li>
+    </ul>
+    <p class="muted">Details: <span class="path">outputs/px_scale/summary.txt</span>; <span class="path">scripts/px_scale_check.py</span>, <span class="path">scripts/zvi_read.py</span>.</p>
+  </div>
+</section>
+
+<section aria-labelledby="sum">
+  <h2 id="sum">What changes in the cKO</h2>
+  <div class="keys">
+    <div class="key"><span class="v">{{n:ML_thick_tm_um.diff|+.1f}} µm</span><span class="l">ML thickness, cKO − WT, litter-adjusted (trimmed means). WT {{n:ML_thick_tm_um.wt|.1f}}, 2017 cKO {{n:ML_thick_tm_um.ko|.1f}} µm; p = {{n:ML_thick_tm_um.p|.2g}}, {{n:ML_thick_um.p|.2g}} on medians.</span></div>
+    <div class="key"><span class="v">{{n:IGL_thick_tm_um.diff|+.1f}} µm</span><span class="l">IGL thickness. WT {{n:IGL_thick_tm_um.wt|.1f}}, 2017 cKO {{n:IGL_thick_tm_um.ko|.1f}} µm; p = {{n:IGL_thick_tm_um.p|.2g}}, {{n:IGL_thick_um.p|.2g}} on medians.</span></div>
+    <div class="key"><span class="v">{{n:EGL_thick_tm_um.diff|+.1f}} µm</span><span class="l">EGL thickness. WT {{n:EGL_thick_tm_um.wt|.1f}}, 2017 cKO {{n:EGL_thick_tm_um.ko|.1f}} µm; p = {{n:EGL_thick_tm_um.p|.2g}}, {{n:EGL_thick_um.p|.2g}} on medians.</span></div>
+    <div class="key"><span class="v">{{n:oEGLp27_thick_tm_um.diff|+.1f}} µm</span><span class="l">p27− outer EGL; p = {{n:oEGLp27_thick_tm_um.p|.2g}}. The p27+ inner EGL does not change ({{n:iEGLp27_thick_tm_um.diff|+.1f}} µm, p = {{n:iEGLp27_thick_tm_um.p|.2g}}).</span></div>
+  </div>
+  <div class="text" style="display:grid;gap:10px">
+    <p>With both litters and litter as a factor, the cKO has a thinner molecular layer and IGL and a thicker EGL, each at p &lt; 0.05 under both summary statistics. The extra EGL is p27− outer EGL; the p27+ inner EGL is the same thickness in both genotypes. In the 2017 litter alone the same differences give p = {{n:ML_thick_tm_um.p_10x|.2g}} (ML), {{n:IGL_thick_tm_um.p_10x|.2g}} (IGL) and {{n:EGL_thick_tm_um.p_10x|.2g}} (EGL); the 2018 cKO mice make the estimate of the spread steadier, not the difference larger. Without the litter term the ML difference grows to {{n:ML_thick_tm_um.diff_pooled|+.1f}} µm and the IGL to {{n:IGL_thick_tm_um.diff_pooled|+.1f}} µm, mostly because the 2018 cerebella are smaller; those p values overstate the genotype effect.</p>
+    <p>Boundaries drawn from the stains alone give an ML difference of {{n:ML_stain_thick_tm_um.diff|+.1f}} µm (p = {{n:ML_stain_thick_tm_um.p|.2g}}) against {{n:ML_thick_tm_um.diff|+.1f}} µm from the labels, and no EGL difference ({{n:EGL_stain_thick_tm_um.diff|+.1f}} µm). Part of the label difference is where the labels put the EGL/ML boundary in the cKO.</p>
+    <p>Relative to the section's own ML, p27 does not differ in any layer: inner EGL / ML is {{n:p27_iEGL_rel_ML.wt|.2f}} in WT and {{n:p27_iEGL_rel_ML.ko|.2f}} in the 2017 cKO, so the paper's Figure 3I p27 differences do not show here. NeuN in the IGL relative to the ML is higher in the cKO ({{n:NeuN_IGL_rel_ML.diff|+.2f}}, p = {{n:NeuN_IGL_rel_ML.p|.2g}}). The shape and orientation of the ML nuclei do not differ, also when the 2018 wild type from the old crops is added.</p>
+  </div>
+</section>
+
+<section aria-labelledby="size">
+  <h2 id="size">Layer size</h2>
+  <figure>
+    <div class="plate"><img src="img/Q1_layer_size.png" alt="Dot plots of EGL, ML and IGL thickness, section area and layer area fractions, WT against cKO with the 2017 and 2018 litters side by side" loading="lazy"></div>
+    <figcaption><p><b>Figure 1.</b> Thickness is the median over each section's complete cortical columns of the flattened strips: EGL at the surface, the IGL ending inside the column, not a geometry error; 8–22 mm of surface per section. Areas come from the final label grid. Each genotype shows its 2017 mice (filled circles, left) and 2018 mice (hollow triangles, right); small marks are sections, large marks mice, bars the mean ± SEM over all the genotype's mice. p: cKO − WT on mouse means with litter as a factor. The 2018 litter has no labelled wild type, hence the empty place under WT.</p></figcaption>
+  </figure>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Measure (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_size}}</tbody>
+  </table></div>
+  <figure>
+    <div class="plate"><img src="img/Q1s_column_thickness.png" alt="Cumulative distributions of EGL, ML and IGL thickness per column for each mouse of both litters" loading="lazy"></div>
+    <figcaption><p><b>Figure 1, supplement.</b> Every column of every mouse. In the 2017 litter the ML is thinnest in cKO mice B and E (medians 69 and 72 µm against 82–85 µm in WT; A 79 µm), and the thicker EGL is carried by A and B (47 and 50 µm against 41–44 µm); E matches the wild types. The 2018 cKO mice (dashed) sit below every 2017 mouse in ML and IGL: the litter difference.</p></figcaption>
+  </figure>
+</section>
+
+<section aria-labelledby="check">
+  <h2 id="check">Do the labels make the difference?</h2>
+  <div class="text"><p>The labels come from a pipeline that treated the 10x cKO mice as controls, so the thickness was measured a second way from the stains alone, on the same columns. The EGL bottom is where DAPI falls past half way from the section's EGL level to its ML level, and the IGL top is where NeuN rises past half way from ML to IGL, each held for 4 µm. The DAPI cut falls inside the less dense inner EGL, so the stain EGL is thinner in both genotypes. The stains give the ML difference the same direction at about a third of the size, and no EGL difference.</p></div>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Trimmed means (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_check}}</tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="iegl">
+  <h2 id="iegl">Inner and outer EGL</h2>
+  <figure>
+    <div class="plate"><img src="img/Q5_inner_egl.png" alt="Thickness of the p27-positive inner EGL and p27-negative outer EGL, the p27 profile through the EGL, and thickness as trimmed means" loading="lazy"></div>
+    <figcaption><p><b>Figure 5.</b> The paper's iEGL is the p27+ part of the EGL. Here an EGL sample counts as p27+ when its p27 is past half way from the section's ML level to its IGL level (0.6 in H). The p27 profile through the EGL (D) climbs from the surface to the EGL bottom the same way in both genotypes. The lower row repeats Figure 1's thickness as 10 % trimmed means, which are not tied to the sampling steps (2 µm at 20x, 3.15 µm at 10x).</p></figcaption>
+  </figure>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Measure (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_iegl}}</tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="int">
+  <h2 id="int">Stain intensity</h2>
+  <figure>
+    <div class="plate"><img src="img/Q2_profiles_layer.png" alt="p27, NeuN and DAPI profiles through EGL, ML and IGL in layer coordinates with the cKO minus WT difference" loading="lazy"></div>
+    <figcaption><p><b>Figure 2.</b> Each column's EGL, ML and IGL stretched to the same length, then scaled so the section's own ML is 0 and its IGL 1. That cancels exposure, bleaching and the camera offset, the way the old R pipeline anchored its profiles. The lower row is cKO − WT with litter as a factor and its 95 % CI. In both genotypes p27 rises from the outer to the inner EGL (0.37 to 0.78 of the way from ML to IGL in WT) and peaks in the upper IGL; the difference band stays across zero.</p></figcaption>
+  </figure>
+  <figure>
+    <div class="plate"><img src="img/Q3_layer_intensity.png" alt="Dot plots of outer EGL, inner EGL and IGL intensity relative to ML for p27, NeuN and DAPI" loading="lazy"></div>
+    <figcaption><p><b>Figure 3.</b> Mean stain per layer relative to the section's ML; the inner and outer EGL are the deeper and outer halves of each column's EGL. Raw intensities cannot be compared even within the 10x litter: s4_A and s4_C are stored stretched to 16 bit, about 16× the others. The camera offset (75 counts, measured outside the tissue on the three unmasked 10x images) is subtracted on the 10x set; on the 20x set it is unknown, so its ratios are slightly compressed.</p></figcaption>
+  </figure>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Measure (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_int}}</tbody>
+  </table></div>
+  <figure>
+    <div class="plate"><img src="img/Q2s_profiles_depth.png" alt="p27, NeuN and DAPI profiles against depth below the surface" loading="lazy"></div>
+    <figcaption><p><b>Figure 2, supplement.</b> The same profiles against depth in µm. Here the cKO's thicker EGL and thinner ML, and the smaller 2018 cerebella, move the layer boundaries under the curves, which the layer coordinates of Figure 2 remove.</p></figcaption>
+  </figure>
+</section>
+
+<section aria-labelledby="nuc">
+  <h2 id="nuc">Nuclei in the molecular layer</h2>
+  <div class="text"><p>This redoes <code>segment_ml_nuclei</code> from the old repo on whole sections. DAPI nuclei are segmented with an adaptive threshold and a watershed, kept when they lie inside the final ML label at least 3 µm from the EGL and IGL, and called NeuN+ as before. The angle is between the nucleus's long axis and the line from the nucleus perpendicular to the IGL, taken from the gradient of the distance to the IGL label smoothed over 10 µm. The old code measured it against the rows of a hand-cut crop. Round nuclei have no meaningful axis and come out uniformly oriented (panel H), so the orientation is read from the elongated ones (eccentricity ≥ 0.85), which point radially: within 30° of the IGL perpendicular for {{n:radial_elong.wt|.0%}} of them in WT.</p></div>
+  <figure>
+    <div class="plate"><img src="img/Q4_ml_nuclei.png" alt="Eccentricity, share of elongated nuclei, their orientation and NeuN fraction, plus angle distributions and depth profiles" loading="lazy"></div>
+    <figcaption><p><b>Figure 4.</b> 5,100–10,100 ML nuclei per 10x section (2,600–5,900 NeuN+) and 3,000–4,900 per 20x section (1,100–1,600 NeuN+). Elongated nuclei point most radially in the middle of the ML and less so at its edges (F). In the 2017 litter WT and cKO differ by at most 2° in any depth band and not at all in eccentricity.</p></figcaption>
+  </figure>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Measure (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_ml}}</tbody>
+  </table></div>
+  <figure>
+    <div class="plate"><img src="img/Q4s_ml_nuclei_checks.png" alt="Resolution test and robustness checks for the ML nuclei measures" loading="lazy"></div>
+    <figcaption><p><b>Figure 4, supplement.</b> Checks. Resampling the 20x images to the 10x pixel size moves eccentricity by {{n:resolution_shift_ecc.diff|+.3f}}, the angle by {{n:resolution_shift_angle.diff|+.1f}}° and the area by {{n:resolution_shift_area.diff|+.1f}} µm². 10x nuclei come out {{n:minor_um.wt|.1f}} µm wide against {{n:minor_um.k20|.1f}} µm at 20x; the litter term in the test absorbs that and any other imaging difference. Restricting to straight ML, where the IGL and EGL perpendiculars agree within 30°, or measuring against the EGL perpendicular, as the old code did against the pia, changes nothing between the genotypes.</p></figcaption>
+  </figure>
+  <h3>The 20x wild type, from the old crops</h3>
+  <div class="text"><p>The old analysis compared the 2018 litter's one wild type (slide position 3) with its cKO mice, on hand-cut folium crops. Those sections are not labelled here, so the crops were rerun with layers classified from DAPI and NeuN and the same nuclei and IGL-perpendicular angle. On the eight cKO sections that also have labels, the crops agree on shape and come out about 6° more radial, as straight stretches should. The wild-type mouse is at the radial, eccentric end: elongated nuclei {{n:crops.angle_elong.wt|.1f}}° from radial against {{n:crops.angle_elong.komin|.1f}}–{{n:crops.angle_elong.komax|.1f}}° in the four cKO mice, and eccentricity {{n:crops.ecc.wt|.3f}} against {{n:crops.ecc.komin|.3f}}–{{n:crops.ecc.komax|.3f}}. That is the old analysis's direction, but with one wild-type mouse it cannot tell genotype from animal. Pooled with the 2017 litter (4 WT / 7 cKO mice, the paper's set; litter as a factor; 2017 whole sections, 2018 crops) there is no difference:</p></div>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Measure (mouse means)</th><th scope="col">WT</th><th scope="col">cKO 2017</th><th scope="col">cKO 2018, crops</th><th scope="col">cKO − WT, litter-adj.</th><th scope="col">95 % CI</th><th scope="col">p</th><th scope="col">p, no litter term</th><th scope="col">p, 2017 only</th></tr></thead>
+    <tbody>{{t_mlc}}</tbody>
+  </table></div>
+  <figure>
+    <div class="plate"><img src="img/Q4c_crops_20x.png" alt="20x folium crops: eccentricity, elongated share, orientation and NeuN share for one wild-type and four cKO mice, and crop vs section agreement" loading="lazy"></div>
+    <figcaption><p><b>Figure 4, crops.</b> 43 crops from 14 sections of 5 mice. E: the same eight cKO sections measured on crops and on whole labelled sections.</p></figcaption>
+  </figure>
+  <h3>Segmentation crops to check</h3>
+  <div class="text"><p>Six random ML stretches per section, DAPI in grey, each kept nucleus outlined in the colour of its angle (blue radial, grey 45°, orange tangential), with the EGL edge in yellow and the IGL edge in green. These are the pictures to look at before trusting the numbers; I have only checked the segmentation numerically.</p></div>
+  <div class="qc">
+    <figure><div class="plate"><img src="img/qc_s4_C.png" alt="ML nuclei outlines on DAPI, s4_C" loading="lazy"></div><figcaption><p><b>s4_C</b>, WT, 10x</p></figcaption></figure>
+    <figure><div class="plate"><img src="img/qc_s5_A.png" alt="ML nuclei outlines on DAPI, s5_A" loading="lazy"></div><figcaption><p><b>s5_A</b>, cKO, 10x</p></figcaption></figure>
+    <figure><div class="plate"><img src="img/qc_s1_4.png" alt="ML nuclei outlines on DAPI, s1_4" loading="lazy"></div><figcaption><p><b>s1_4</b>, cKO, 20x</p></figcaption></figure>
+  </div>
+</section>
+
+<section aria-labelledby="persec">
+  <h2 id="persec">Every section</h2>
+  <div class="tablebox"><table>
+    <thead><tr><th scope="col" style="text-align:left">Section</th><th scope="col">Mouse</th><th scope="col">Genotype</th><th scope="col">Imaging</th><th scope="col">EGL µm</th><th scope="col">p27+ iEGL µm</th><th scope="col">ML µm</th><th scope="col">IGL µm</th><th scope="col">p27 iEGL/ML</th><th scope="col">p27 IGL/ML</th><th scope="col">Eccentricity</th><th scope="col">Elongated angle °</th><th scope="col">NeuN+ share</th></tr></thead>
+    <tbody>{{t_sec}}</tbody>
+  </table></div>
+  <p class="muted text">Thickness as 10 % trimmed means over the section's complete columns; nuclei measures over its NeuN+ ML nuclei. All values in <span class="path">outputs/quant/sections.csv</span> and <span class="path">ml_nuclei_per_section.csv</span>.</p>
+</section>
+
+<section aria-labelledby="meth">
+  <h2 id="meth">How it was measured</h2>
+  <ul class="text">
+    <li><b>Labels:</b> the final grids of the flattening pipeline (EGL repair v10, flatten v11, flat_fix v9; the gold s1_2 is your tracing). The open EGL-label spots from Version 10 (s3_2, s3_5, s2_4, s2_2) are still in these labels.</li>
+    <li><b>Pixel sizes:</b> 10x 1.0239 µm/px, 20x 0.5119 µm/px. The 10x labels and strips were built at 0.65 µm/px; lengths are multiplied by 1.575, areas by 2.48, and every µm threshold below is applied in true µm.</li>
+    <li><b>Columns:</b> the flattened strips, columns at right angles to the surface 2 µm apart, sampled every 2 µm (3.15 µm at 10x). A column counts when it is EGL-covered cortex, not a geometry error, reads EGL → ML → IGL from the surface (leading unassigned cells up to 40 µm skipped, gaps up to 4 µm in the EGL and 8 µm in the IGL bridged), and the IGL ends inside it. That keeps 49–72 % of each section's covered surface.</li>
+    <li><b>Statistics:</b> each mouse is the mean of its sections. Least squares on mouse means, value ~ genotype + litter: the genotype coefficient, its 95 % CI and p (3 WT, 6 cKO mice; 6 residual degrees of freedom). Beside it, Welch's t without the litter term and within the 2017 litter (3 v 3).</li>
+    <li><b>Nuclei:</b> DAPI minus a 10 µm Gaussian background; foreground above the local 10.7 µm mean by 0.25 robust SD and above 60 % of the ML's Otsu level; holes filled, 0.5 µm opening; watershed with peaks ≥ 2.6 µm apart; kept at 14–120 µm² (true µm at both magnifications), solidity ≥ 0.85, ≥ 80 % inside the ML. NeuN+: ≥ 30 % of the nucleus above the NeuN Otsu level of the ML.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="next">
+  <h2 id="next">Open questions</h2>
+  <ul class="text">
+    <li>The 20x wild type: position 3 (s1_3, s2_3, s3_3) and position 1 (s2_1, s3_1) have full .zvi panoramas in <span class="path">~/Dropbox/images/edu_repeat/p27/</span> but no labels. Labelling them gives the paper's 4 WT / 7 cKO for the layer measures and lets the 2018 litter contribute to the genotype difference itself.</li>
+    <li>The 10x labels were built at 0.65 µm/px, so the µm thresholds inside the labelling steps (gap bridges, smoothing, minimum sizes) acted 1.575× larger than intended on the 10x. The measurements are rescaled exactly; the labels themselves were not rebuilt.</li>
+    <li>The 2017 cerebella are about 1.25× the Allen P7 atlas and the 2018 ones about 1×. The collection dates or weights of the two litters would tell whether this is age.</li>
+    <li>In the 20x sections the labelled EGL ({{n:EGL_thick_tm_um.k20|.0f}} µm) is more than twice the EGL the DAPI boundary gives ({{n:EGL_stain_thick_tm_um.k20|.0f}} µm); in the 10x set it is about 1.7× as thick ({{n:EGL_thick_tm_um.wt|.0f}} against {{n:EGL_stain_thick_tm_um.wt|.0f}} µm in WT). Part of that is the inner EGL being less dense, but these are also the sections with the open EGL-label spots, so their thick cKO EGL needs a look before it is read as phenotype.</li>
+  </ul>
+</section>
+
+<hr>
+<section aria-labelledby="files">
+  <h3 id="files">Files</h3>
+  <ul class="text muted">
+    <li><span class="path">scripts/quant_layers.py</span>, <span class="path">scripts/quant_figures.py</span>: layer size and intensity → <span class="path">outputs/quant/sections.csv</span>, <span class="path">stats.csv</span></li>
+    <li><span class="path">scripts/ml_nuclei.py</span>, <span class="path">scripts/ml_nuclei_figures.py</span>: ML nuclei → <span class="path">outputs/quant/ml_nuclei_&lt;section&gt;.csv.gz</span>, <span class="path">ml_stats.csv</span></li>
+    <li>Figures as PNG, PDF and SVG in <span class="path">figures/quant/</span>; shared style and the layout check in <span class="path">scripts/figstyle.py</span></li>
+  </ul>
+</section>
+</div>

@@ -1,0 +1,485 @@
+<title>Synthetic IGL Study</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* layout: a lab-notebook report; one reading column with wide plates for galleries and parameter charts (same family as the IGL Ribbon Model page) */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff;
+  --map-ground: #ffffff; --map-tissue: #e4e8ed; --map-egl: #b6c3d3; --map-igl: #dccb94; --map-wm: #cbbfb4; --map-edge: #8a7a4a;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --good: #0ca30c; --bad: #d03b3b;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520;
+  --map-ground: #0e1217; --map-tissue: #262c35; --map-egl: #3a4758; --map-igl: #5d5233; --map-wm: #423a33; --map-edge: #b59b52;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520;
+  --map-ground: #0e1217; --map-tissue: #262c35; --map-egl: #3a4758; --map-igl: #5d5233; --map-wm: #423a33; --map-edge: #b59b52;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 46px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(30px, 5vw, 44px); }
+h2 { font-size: 26px; }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 70ch; }
+section { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.prose { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lede { font-size: 18px; color: var(--fg2); }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.plate { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.findings { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; max-width: 76ch; }
+.findings li::marker { color: var(--accent); font-weight: 600; }
+.findings ul { margin: 6px 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
+.findings ul li::marker { color: var(--muted, currentColor); font-weight: 400; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13.5px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11.5px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+td.sub { color: var(--muted); font-size: 12.5px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--fg2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.ln { display: inline-block; width: 20px; height: 0; border-top: 3px solid; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.seg button, .tabs button { font: 13px var(--text); padding: 5px 11px; border-radius: 4px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); cursor: pointer; min-height: 32px; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; font-size: 13px; color: var(--fg2); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cell svg { width: 100%; height: auto; display: block; border-radius: 4px; background: var(--map-ground); border: 1px solid var(--line); }
+.cell .cap { font-size: 12.5px; color: var(--fg2); line-height: 1.4; }
+.cell .cap b { color: var(--fg); font-weight: 500; }
+.pill { display: inline-block; font: 500 11px var(--mono); padding: 1px 6px; border-radius: 8px; border: 1px solid; }
+.pill.ok { color: var(--good); border-color: var(--good); }
+.pill.no { color: var(--bad); border-color: var(--bad); }
+.twins { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.post { display: flex; flex-direction: column; gap: 2px; }
+.prow { display: grid; grid-template-columns: minmax(150px, 15em) minmax(0, 1fr) 120px; gap: 10px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 640px) { .prow { grid-template-columns: minmax(0, 1fr); } }
+.prow .nm { font-size: 13px; }
+.prow .nm b { font: 500 12.5px var(--mono); }
+.prow .nm span { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.prow svg { width: 100%; height: 34px; display: block; }
+.prow text { fill: var(--muted); font: 10px var(--mono); }
+.rate svg { height: 30px; }
+.small { font-size: 13px; color: var(--muted); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+svg.map { width: 100%; height: auto; display: block; background: var(--map-ground); border-radius: 4px; border: 1px solid var(--line); }
+</style>
+<div class="wrap">
+<header class="prose">
+  <div class="eyebrow">Overnight run · P7 cerebellum · IGL</div>
+  <h1>Synthetic IGL Study</h1>
+  <p class="lede">Which equations and which parameter values produce an IGL that looks like the real one? Real IGLs (your controls and the Allen P7 Nissl series) were measured with one set of 20 statistics; 131,000 synthetic sections were measured the same way: 59,000 drawn at random from seven generative models, then 72,000 from a local search around the closest ones. A synthetic section counts as sensible only when it is as typical as the real sections are of each other. Your EZH2 cKO sections were used as a third target, to see which parameters move an IGL from the control look to the cKO look.</p>
+</header>
+
+<section id="findings">
+  <h2>What came out</h2>
+  <ol class="findings" id="conclusions"></ol>
+</section>
+
+<section id="real">
+  <div class="prose">
+    <h2>Real IGLs in numbers</h2>
+    <p>Median and 10th–90th percentile across sections. Your controls and the Allen P7 labels disagree on some layers because the Allen layers come from Nissl density classes: its EGL is the darkest class only, and its IGL takes in part of the white matter. Synthetic sections are therefore judged against each source separately.</p>
+  </div>
+  <div class="plate tbl"><table id="real-table"></table></div>
+</section>
+
+<section id="smooth">
+  <div class="prose">
+    <h2>Smoothed approximations of the real IGL</h2>
+    <p>Each real IGL rebuilt from its own EGL and white matter with as few numbers as possible. <b>One number</b>: the IGL is all tissue that is not white matter and lies deeper than an ML thickness m below the EGL. <b>Two numbers</b>: the IGL is the band a ≤ depth ≤ b below the EGL, no white matter used. The smooth versions let those depths drift with position, averaged over 50–800 µm. Scores are Dice with the real IGL.</p>
+  </div>
+  <div class="plate tbl"><table id="lam-table"></table></div>
+  <div class="plate">
+    <div class="ctl">
+      <span class="seg" id="lam-sec" role="group" aria-label="Section"></span>
+      <span class="seg" id="lam-model" role="group" aria-label="Approximation"></span>
+    </div>
+    <div class="two">
+      <svg class="map" id="lam-map" role="img" aria-label="Real IGL and its smoothed approximation"></svg>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="legend"><span><i class="sw" style="background:var(--map-igl)"></i>real IGL</span><span><i class="ln" style="border-color:var(--s1)"></i>approximation</span><span><i class="sw" style="background:var(--map-egl)"></i>EGL</span><span><i class="sw" style="background:var(--map-wm)"></i>white matter</span></div>
+        <div id="lam-note" class="small"></div>
+        <h3>Fitted ML thickness m, per section</h3>
+        <svg id="m-strip" style="width:100%;height:auto" role="img" aria-label="ML thickness per section"></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="scaling">
+  <div class="prose">
+    <h2>How the layers scale with folium size</h2>
+    <p>Along the centre line of every folium (the medial axis of the tissue inside the EGL), the half-width h, from centre to EGL, splits into ML, IGL and white matter. Median of all centre-line points in 25 µm bins of h; shaded band = interquartile range. This is the rule a generator has to reproduce.</p>
+  </div>
+  <div class="plate">
+    <div class="ctl"><span class="seg" id="al-group" role="group" aria-label="Sections"></span></div>
+    <div class="chart" id="al-chart" style="position:relative"></div>
+    <div class="legend" id="al-legend"></div>
+    <p class="small" id="al-note"></p>
+  </div>
+</section>
+
+<section id="models">
+  <div class="prose">
+    <h2>Seven ways to generate an IGL</h2>
+    <p><b>Folded surface (fold).</b> A dome-shaped outline is cut by fissures running from the surface toward a core near the base: a few deep main fissures, more shallow minor ones, each bent and open as a wedge at the surface. Every layer is a depth below the pial surface: EGL from 0 to e, ML from e to e + m, IGL from e + m to e + m + g, white matter deeper. Thicknesses vary smoothly (CV, correlation length), with the folding (k), and at cell scale (roughness).</p>
+    <p><b>Folded surface with core options (fold2).</b> The same, with two structural options the sampling can switch on or off: fissures aim at an inner core ellipse of relative size core_r instead of one point (with 0, deep fissures converge and pinch the tissue between them), and in narrow folia the EGL and ML may take at most a share 1 − q of the folium's half-width, so every folium keeps an IGL core.</p>
+    <p><b>Core options, corrected (fold3).</b> fold2 turned out to strip the EGL off the surface in two ways: the folium half-width was read from the nearest point of the medial axis, which has short spurs toward every bump of the outline, so near the surface the half-width was far too small and the EGL and ML were squeezed away; and the depth jitter moved the EGL boundary along with the deeper ones. fold3 uses the local thickness (the largest disk inside the tissue that contains the pixel) and jitters only the ML, IGL and white-matter boundaries. Added during the night.</p>
+    <p><b>Folded surface with medial white matter (foldma).</b> The folded surface again, but the white matter is a tree along the folia's medial axis: it exists only where a folium's half-width h exceeds h_min, and its radius is a share ρ of the room left under the EGL and ML (h − e − m). The IGL fills everything between the ML and that tree, so its thickness follows the room in each folium instead of being a parameter. This model was added during the night after the first two failed in the same way (see below).</p>
+    <p><b>Fingers (finger).</b> Lobules as parallel-sided fingers on a central core instead of wedges cut into a dome: each lobule is a capsule of half-width W and length L, and some split at the tip into two or three narrower sub-folia. Fissures are the narrow gaps between neighbouring fingers. Layers by depth as in fold. Added during the night after the measured layer rule (above) showed that wedge-shaped lobules, which narrow toward the core, are what breaks the synthetic IGL apart.</p>
+    <p class="small">Edge roughness. Real IGL edges wiggle at the scale of a few cells, which gives the ribbon its curvature. The first families roughen each layer's thickness separately, which can pinch the IGL into pieces; fold2, fold3 and finger instead shift the layer boundaries together by a smooth random depth offset (jit, 24 µm correlation), which wiggles the IGL without pinching it.</p>
+    <p><b>White-matter tree (arbor).</b> The arbor vitae is drawn first, as tapering branches from a core, some splitting into folia; tissue covers the tree and fissures run between neighbouring branches. EGL and ML are depths below the surface, and the IGL fills everything between the ML and the tree. The IGL's thickness is not a parameter: it is whatever is left.</p>
+    <p><b>Smooth surface (fourier).</b> A circle deformed by random Fourier modes, no fissures, layers by depth. A control: can folding without fissures make a real IGL?</p>
+  </div>
+  <div class="plate tbl"><table id="fam-table"></table></div>
+  <div class="plate">
+    <div class="tabs" role="tablist" id="gal-tabs" aria-label="Model family"></div>
+    <div class="legend"><span><i class="sw" style="background:var(--map-egl)"></i>EGL</span><span><i class="sw" style="background:var(--map-tissue);outline:1px solid var(--line)"></i>ML</span><span><i class="sw" style="background:var(--map-igl)"></i>IGL</span><span><i class="sw" style="background:var(--map-wm)"></i>white matter</span><span>scale bar 500 µm</span></div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
+<section id="params">
+  <div class="prose">
+    <h2>Which parameter values make a sensible IGL</h2>
+    <p>Pick a model. Each row is one parameter over the range it was sampled from. Bars show the parameter values of the sections that came out like each target: thin line 5–95%, thick bar 25–75%, dot median. Solid bars are sections that passed (found by the local search below); faded bars are the closest 1% of the broad sampling, where none passed. The small chart on the right is the share of samples that came out sensible across the range (darker = higher), for the target picked above it: a flat chart means the parameter does not matter, a peak means it must sit there.</p>
+  </div>
+  <div class="plate">
+    <div class="ctl"><span>Sensible rate for</span><span class="seg" id="rate-target" role="group" aria-label="Target for the sensible rate"></span><span class="seg" id="param-fam" role="group" aria-label="Model family"></span></div>
+    <div class="legend"><span><i class="ln" style="border-color:var(--s1)"></i>like your controls</span><span><i class="ln" style="border-color:var(--s2)"></i>like Allen P7</span><span><i class="ln" style="border-color:var(--s3)"></i>like your EZH2 cKO</span></div>
+    <div class="small" id="param-src"></div>
+    <div class="small" id="importance"></div>
+    <div class="post" id="post"></div>
+  </div>
+  <div class="prose" id="refine-note"></div>
+  <div class="plate" id="refine-plate">
+    <div class="gallery" id="refine-gallery"></div>
+  </div>
+</section>
+
+<section id="contrast-sec">
+  <div class="prose">
+    <h2>What separates the targets in parameter space</h2>
+    <p>For a model that reached sections like two targets, the parameters of the passing sections compared: median and interquartile range for each, and the shift between the medians in units of the average IQR. Large shifts are the parameters that move an IGL from one group's look to the other's; small shifts are shared.</p>
+  </div>
+  <div id="contrast"></div>
+</section>
+
+<section id="twins-sec">
+  <div class="prose">
+    <h2>Synthetic twins</h2>
+    <p>Each real section next to the synthetic section whose statistics are closest to it, out of every sample drawn. Your sections are turned to the atlas frame (anterior left, dorsal up). A twin matches the numbers, not the layout: the statistics do not say where each lobule sits.</p>
+  </div>
+  <div class="twins" id="twins"></div>
+</section>
+
+<section id="ribbon">
+  <div class="prose">
+    <h2>A ribbon without a surface</h2>
+    <p>The earlier gap model treats the IGL as a ribbon whose curvature wanders with the statistics of real ribbons. Drawn freely, without an EGL to follow, such a ribbon stays sensible over a few hundred µm but not over the length of a real IGL:</p>
+  </div>
+  <div class="plate tbl"><table id="ribbon-table"></table></div>
+</section>
+</div>
+
+<script>
+const D = __DATA__;
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function s(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+const fmt = (v, k) => v == null ? "–" : (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(3));
+
+function drawSection(svg, d, opts) {
+  svg.textContent = "";
+  const H = d.n[0], W = d.n[1];
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  s("rect", { width: W, height: H, style: "fill:var(--map-ground)" }, svg);
+  for (const [k, c] of [["tissue", "--map-tissue"], ["wm", "--map-wm"], ["igl", "--map-igl"], ["egl", "--map-egl"]])
+    if (d[k]) s("path", { d: d[k], "fill-rule": "evenodd", style: "fill:var(" + c + ")" }, svg);
+  if (opts && opts.bar !== false) {
+    const len = 500 / (d.um_per_unit || 2);
+    s("rect", { x: 6, y: H - 10, width: len, height: Math.max(2, H / 150), style: "fill:var(--fg)" }, svg);
+  }
+  return svg;
+}
+
+/* conclusions */
+(function () { const ol = $("conclusions"); for (const c of (D.conclusions || [])) { const li = h("li", {}, ol); li.innerHTML = c; } })();
+
+/* real statistics */
+(function () {
+  const T = $("real-table"), G = ["IF control", "IF other", "Allen P7", "IF EZH2 cKO"];
+  T.innerHTML = "<thead><tr><th>Statistic</th>" + G.map((g) => "<th>" + g + " (" + D.real[g].n + ")</th>").join("") + "</tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const k of D.stats) {
+    const tr = h("tr", {}, tb); const td = h("td", {}, tr, D.stat_names[k]);
+    for (const g of G) { const q = D.real[g].q[k]; h("td", { class: "num" }, tr, fmt(q[1]) + "  [" + fmt(q[0]) + "–" + fmt(q[2]) + "]"); }
+  }
+})();
+
+/* laminar */
+const LAMNAME = { wm_const: "1 number: not white matter, deeper than m", band_const: "2 numbers: band a–b below the EGL" };
+for (const sc of D.laminar.scales) { LAMNAME["wm_smooth_" + sc] = "m drifting, smoothed over " + sc + " µm"; LAMNAME["band_smooth_" + sc] = "band drifting, smoothed over " + sc + " µm"; }
+(function () {
+  const T = $("lam-table"), G = ["IF control", "IF other", "Allen P7", "IF EZH2 cKO"].filter((g) => D.laminar.dice[g]);
+  T.innerHTML = "<thead><tr><th>Approximation</th>" + G.map((g) => "<th>" + g + "</th>").join("") + "</tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const m of D.laminar.models) { const tr = h("tr", {}, tb); h("td", {}, tr, LAMNAME[m]); for (const g of G) { const q = D.laminar.dice[g][m]; h("td", { class: "num" }, tr, q[1].toFixed(3) + "  [" + q[0].toFixed(2) + "–" + q[2].toFixed(2) + "]"); } }
+})();
+let lamSec = Object.keys(D.laminar.examples)[0], lamModel = "wm_const";
+function drawLam() {
+  const e = D.laminar.examples[lamSec];
+  const svg = $("lam-map");
+  drawSection(svg, Object.assign({}, e, { um_per_unit: 2 }));
+  const a = e.approx[lamModel];
+  if (a) s("path", { d: a, "fill-rule": "evenodd", style: "fill:none;stroke:var(--s1);stroke-width:1.6;vector-effect:non-scaling-stroke" }, svg);
+  $("lam-note").textContent = "Dice " + (e.dice[lamModel] != null ? e.dice[lamModel].toFixed(3) : "–") + ". Fitted m = " + e.m.toFixed(0) + " µm; band " + e.band[0].toFixed(0) + "–" + e.band[1].toFixed(0) + " µm below the EGL.";
+}
+(function () {
+  const S1 = $("lam-sec"), S2 = $("lam-model");
+  for (const k of Object.keys(D.laminar.examples)) { const b = h("button", { type: "button", "aria-pressed": String(k === lamSec) }, S1, k); b.addEventListener("click", () => { lamSec = k; S1.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawLam(); }); }
+  for (const k of ["wm_const", "band_const", "band_smooth_50", "band_smooth_200", "band_smooth_800"]) { const b = h("button", { type: "button", "aria-pressed": String(k === lamModel) }, S2, k === "wm_const" ? "1 number" : k === "band_const" ? "band" : "band, " + k.split("_")[2] + " µm"); b.addEventListener("click", () => { lamModel = k; S2.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawLam(); }); }
+  drawLam();
+  // m strip plot
+  const svg = $("m-strip"); const W = 520, H = 148, ml = 92, mr = 12; svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  const G = [["IF control", "var(--s1)"], ["IF other", "var(--s3)"], ["Allen P7", "var(--s2)"], ["IF EZH2 cKO", "var(--muted)"]].filter(([g]) => D.laminar.m[g] && D.laminar.m[g].length);
+  const all = G.flatMap(([g]) => D.laminar.m[g]); const lo = Math.min(...all) - 4, hi = Math.max(...all) + 4;
+  const X = (v) => ml + (v - lo) / (hi - lo) * (W - ml - mr);
+  for (let t = Math.ceil(lo / 10) * 10; t <= hi; t += 10) { s("line", { x1: X(t), x2: X(t), y1: 6, y2: H - 22, style: "stroke:var(--line)" }, svg); const tx = s("text", { x: X(t), y: H - 6, "text-anchor": "middle", style: "fill:var(--muted);font:11px var(--mono)" }, svg); tx.textContent = t; }
+  G.forEach(([g, c], i) => {
+    const y = 20 + i * 28; const tx = s("text", { x: 0, y: y + 4, style: "fill:var(--fg2);font:12px var(--text)" }, svg); tx.textContent = g;
+    D.laminar.m[g].forEach((v, j) => s("circle", { cx: X(v), cy: y + ((j % 3) - 1) * 4, r: 4, style: "fill:" + c + ";fill-opacity:0.75;stroke:var(--surface);stroke-width:1" }, svg));
+  });
+  const xl = s("text", { x: W - mr, y: H - 6, "text-anchor": "end", style: "fill:var(--muted);font:11px var(--text)" }, svg); xl.textContent = "µm";
+})();
+
+/* layer scaling */
+(function () {
+  const A = D.allometry; if (!A) { $("scaling").hidden = true; return; }
+  const groups = Object.keys(A.groups).filter((g) => A.groups[g].n > 0);
+  let grp = groups.includes("IF control") ? "IF control" : groups[0];
+  const SER = [["igl", "IGL thickness", "var(--s1)"], ["outer", "ML thickness", "var(--s2)"], ["wm", "white-matter radius", "var(--s3)"]];
+  const mids = A.bins.slice(0, -1).map((b, i) => (b + A.bins[i + 1]) / 2);
+  function draw() {
+    const box = $("al-chart"); box.textContent = "";
+    const G0 = A.groups[grp];
+    const W = Math.max(300, box.clientWidth || 700), H = 300, ml = 48, mr = W < 520 ? 16 : 140, mt = 14, mb = 42;
+    const svg = s("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Layer thickness against folium half-width" }, box);
+    const xmax = A.bins[A.bins.length - 1];
+    const vals = SER.flatMap(([k]) => G0[k].filter(Boolean).map((v) => v[2]));
+    const ymax = Math.max(80, Math.ceil(Math.max(...vals) / 50) * 50);
+    const X = (v) => ml + (v - A.bins[0]) / (xmax - A.bins[0]) * (W - ml - mr), Y = (v) => mt + (1 - v / ymax) * (H - mt - mb);
+    for (let t = 0; t <= ymax; t += 50) { s("line", { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), style: "stroke:var(--line);stroke-dasharray:2 4" }, svg); const tx = s("text", { x: ml - 8, y: Y(t) + 4, "text-anchor": "end", style: "fill:var(--fg2);font:12px var(--text)" }, svg); tx.textContent = t; }
+    for (let t = 50; t <= xmax; t += 50) { const tx = s("text", { x: X(t), y: H - mb + 18, "text-anchor": "middle", style: "fill:var(--fg2);font:12px var(--text)" }, svg); tx.textContent = t; }
+    const xl = s("text", { x: ml + (W - ml - mr) / 2, y: H - 6, "text-anchor": "middle", style: "fill:var(--fg2);font:12px var(--text)" }, svg); xl.textContent = "folium half-width h (µm)";
+    const yl = s("text", { x: 12, y: mt + 8, style: "fill:var(--fg2);font:12px var(--text)" }, svg); yl.textContent = "µm";
+    for (const [k, nm, c] of SER) {
+      const pts = mids.map((m, i) => [m, G0[k][i]]).filter(([, v]) => v);
+      if (!pts.length) continue;
+      const band = pts.map(([m, v]) => X(m) + "," + Y(v[2])).concat(pts.slice().reverse().map(([m, v]) => X(m) + "," + Y(v[0]))).join(" ");
+      s("polygon", { points: band, style: "fill:" + c + ";fill-opacity:0.14" }, svg);
+      s("polyline", { points: pts.map(([m, v]) => X(m) + "," + Y(v[1])).join(" "), style: "fill:none;stroke:" + c + ";stroke-width:2;stroke-linejoin:round" }, svg);
+      pts.forEach(([m, v]) => s("circle", { cx: X(m), cy: Y(v[1]), r: 3.5, style: "fill:" + c + ";stroke:var(--surface);stroke-width:1.5" }, svg));
+      if (mr > 60) { const last = pts[pts.length - 1]; const tx = s("text", { x: X(last[0]) + 8, y: Y(last[1][1]) + 4, style: "fill:var(--fg);font:500 12px var(--text)" }, svg); tx.textContent = nm; }
+    }
+    const tip = h("div", { class: "tip", hidden: "" }, box); tip.style.position = "absolute"; tip.style.background = "var(--surface)"; tip.style.border = "1px solid var(--line)"; tip.style.borderRadius = "4px"; tip.style.padding = "6px 9px"; tip.style.fontSize = "13px"; tip.style.pointerEvents = "none";
+    const cross = s("line", { y1: mt, y2: H - mb, x1: -9, x2: -9, style: "stroke:var(--fg2)" }, svg);
+    mids.forEach((m, i) => {
+      const w = (W - ml - mr) / mids.length;
+      const hit = s("rect", { x: X(m) - w / 2, y: mt, width: w, height: H - mt - mb, style: "fill:transparent" }, svg);
+      const show = () => { cross.setAttribute("x1", X(m)); cross.setAttribute("x2", X(m)); tip.textContent = ""; h("div", {}, tip, "h " + A.bins[i] + "–" + A.bins[i + 1] + " µm (" + G0.count[i] + " points)"); for (const [k, nm] of SER) { const v = G0[k][i]; h("div", {}, tip, nm + ": " + (v ? v[1].toFixed(0) + " µm" : "–")); } h("div", {}, tip, "white matter present: " + (G0.wm_present[i] != null ? Math.round(G0.wm_present[i] * 100) + "%" : "–")); tip.hidden = false; tip.style.left = Math.min(X(m) / W * box.clientWidth + 10, box.clientWidth - 210) + "px"; tip.style.top = "8px"; };
+      hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
+      hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("x1", -9); cross.setAttribute("x2", -9); });
+    });
+    const lg = $("al-legend"); lg.textContent = "";
+    for (const [, nm, c] of SER) { const sp = h("span", {}, lg); const i = h("i", { class: "ln" }, sp); i.style.borderColor = c; sp.append(nm); }
+    $("al-note").textContent = grp === "Allen P7" ? "The Allen labels do not follow a layer rule here: their 'ML' class also takes pale gaps and vessels deep in the folia (ML reaching 145 µm) and white matter is rarely on the centre line, so the Allen layers are not used for this rule." : "White matter appears once folia are wider than about 150 µm (share present: " + G0.wm_present.filter((v) => v != null).map((v) => Math.round(v * 100) + "%").join(", ") + " across the bins).";
+  }
+  const seg = $("al-group");
+  for (const g of groups) { const b = h("button", { type: "button", "aria-pressed": String(g === grp) }, seg, g); b.addEventListener("click", () => { grp = g; seg.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); draw(); }); }
+  draw();
+  let rt = null; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
+})();
+
+/* families */
+const FAMNAME = { finger: "Fingers", fold: "Folded surface", fold2: "Folded surface, core options", fold3: "Folded surface, core options (corrected)", foldma: "Folded surface, medial white matter", arbor: "White-matter tree", fourier: "Smooth surface" };
+(function () {
+  const T = $("fam-table");
+  T.innerHTML = "<thead><tr><th>Model</th><th>Samples</th><th>Sensible vs your controls</th><th>Sensible vs Allen P7</th><th>Sensible vs EZH2 cKO</th><th>Most often off (vs your controls)</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const [f, v] of Object.entries(D.families)) {
+    const tr = h("tr", {}, tb); h("td", {}, tr, FAMNAME[f]); h("td", { class: "num" }, tr, v.valid.toLocaleString());
+    for (const t of ["IF", "Allen", "cKO"]) { const x = v.targets[t]; h("td", { class: "num" }, tr, x ? x.sensible + " (" + x.pct.toFixed(2) + "%), closest " + x.best.toFixed(2) : "–"); }
+    const f2 = v.targets.IF.fails; h("td", { class: "sub" }, tr, Object.entries(f2).slice(0, 3).map(([k, r]) => D.stat_names[k] + " " + Math.round(r * 100) + "%").join("; "));
+  }
+  const tr = h("tr", {}, tb); h("td", { class: "sub", colspan: 6 }, tr, "Sensible = no further from the target than 90% of the target's own sections (threshold " + D.targets.IF.threshold + " for your controls, " + D.targets.Allen.threshold + " for Allen P7, in units of the real spread). 'Most often off': share of the other samples where that statistic is more than 2 spreads from the real median.");
+})();
+let galFam = Object.keys(D.families)[0];
+function drawGallery() {
+  const box = $("gallery"); box.textContent = "";
+  for (const g of D.families[galFam].gallery) {
+    const c = h("div", { class: "cell" }, box);
+    drawSection(s("svg", { role: "img", "aria-label": "Synthetic section, " + g.why }, c), g.svg);
+    const cap = h("div", { class: "cap" }, c);
+    const ok = g.d_IF <= D.targets.IF.threshold || g.d_Allen <= D.targets.Allen.threshold;
+    const p = h("span", { class: "pill " + (ok ? "ok" : "no") }, cap, ok ? "sensible" : "not sensible"); cap.append(" " + g.why);
+    h("div", {}, cap, "distance " + g.d_IF.toFixed(2) + " (controls), " + g.d_Allen.toFixed(2) + " (Allen)");
+    if (!ok) h("div", {}, cap, "off: " + g.worst.map(([k, z]) => D.stat_names[k].split(",")[0].split("(")[0].trim() + " " + (z > 0 ? "+" : "") + z).join("; "));
+    else h("div", {}, cap, "IGL width " + fmt(g.stats.w_med) + " µm, depth " + fmt(g.stats.d_med) + " µm, " + Math.round(g.stats.igl_frac * 100) + "% IGL");
+  }
+}
+(function () {
+  const tabs = $("gal-tabs");
+  for (const f of Object.keys(D.families)) { const b = h("button", { type: "button", role: "tab", "aria-selected": String(f === galFam) }, tabs, FAMNAME[f]); b.addEventListener("click", () => { galFam = f; tabs.querySelectorAll("button").forEach((q) => q.setAttribute("aria-selected", String(q === b))); drawGallery(); }); }
+  drawGallery();
+})();
+
+/* parameters */
+const PDESC = {
+  A: "outline half-width (µm)", B: "outline half-height (µm)", cut: "base cut (fraction of half-height below centre)", core_h: "where fissures aim (fraction up from the base)",
+  th_a: "anterior end of the fissure arc (°)", th_p: "posterior end of the fissure arc (°)", n_main: "deep (main) fissures", n_minor: "shallow (minor) fissures",
+  f_main: "main fissure depth (fraction of the way to the core)", f_minor: "minor fissure depth (fraction)", f_sd: "spread of fissure depths", jitter: "irregular fissure spacing",
+  bend: "fissure bend", open: "fissure opening at the surface (µm)", e: "EGL thickness e (µm)", m: "ML thickness m (µm)", g: "IGL thickness g (µm)",
+  cv_e: "EGL thickness variation (CV)", cv_m: "ML thickness variation (CV)", cv_g: "IGL thickness variation (CV)", ell: "length scale of that variation (µm)",
+  k_m: "ML thicker at fissure bases (+) or tips (−)", k_g: "IGL thicker at fissure bases (+) or tips (−)", rough: "edge roughness (cell scale)",
+  n_lob: "lobule branches", L: "branch length (µm)", L_sd: "branch length spread", p_split: "chance a branch splits into folia", split_at: "where it splits (fraction)",
+  split_ang: "split angle (°)", r0: "white-matter radius at the core (µm)", r_tip: "white-matter radius at the tip (µm)", cover: "tissue over the white matter (µm)",
+  fiss: "fissure depth (fraction of the cover)", R: "radius (µm)", amp: "fold amplitude", beta: "fold spectrum slope", kmax: "highest fold mode",
+  q_core: "share of a narrow folium's half-width kept for the IGL", core_r: "size of the core the fissures aim at (fraction)", jit: "coherent depth jitter of the layer boundaries (µm)",
+  rho: "white-matter radius as a share of the room under the ML", h_min: "half-width above which a folium has white matter (µm)",
+  Rc: "central core radius (µm)", W: "lobule half-width (µm)", W_sd: "lobule width spread", p_sub: "chance a lobule splits at the tip", n_sub: "sub-folia per split",
+  sub_len: "sub-folium length (fraction of the lobule)", sub_ang: "sub-folium fan angle (°)", gap: "gap between neighbouring lobules (µm)", open: "fissure opening at the surface (µm)"
+};
+let rateTarget = "IF", paramFam = (() => { let best = "fold", n = -1; for (const [f, v] of Object.entries(D.families)) { const r = v.targets.IF && v.targets.IF.refined; if (r && Object.keys(r.q).length && r.sensible > n) { n = r.sensible; best = f; } } return best; })();
+const TCOL = { IF: "var(--s1)", Allen: "var(--s2)", cKO: "var(--s3)" };
+function rangeOf(fam, t, k) {
+  const x = fam.targets[t]; if (!x) return null;
+  if (x.refined && x.refined.q && x.refined.q[k]) return { q: x.refined.q[k], refined: true, n: x.refined.sensible };
+  return x.posterior[k] ? { q: x.posterior[k].q, refined: false, n: x.accepted } : null;
+}
+function drawParams() {
+  const box = $("post"); box.textContent = "";
+  const fam = D.families[paramFam]; if (!fam) return;
+  const im = fam.targets[rateTarget] && fam.targets[rateTarget].importance;
+  const srcs = ["IF", "Allen", "cKO"].map((t) => { const x = fam.targets[t]; if (!x) return null; const r = x.refined; return (t === "IF" ? "your controls" : t === "Allen" ? "Allen P7" : "EZH2 cKO") + ": " + (r && Object.keys(r.q).length ? r.sensible + " sensible sections from the local search (solid)" : "closest " + x.accepted + " prior samples, none sensible (faded)"); }).filter(Boolean);
+  $("param-src").textContent = "Bars show " + srcs.join("; ") + ".";
+  $("importance").textContent = im ? "Parameters that matter most for how close a sample comes (random forest on " + fam.valid.toLocaleString() + " samples, R² " + im.r2.toFixed(2) + " on held-out samples): " + im.ranking.slice(0, 6).map(([k, v]) => k + " (" + (PDESC[k] || k) + ")").join(", ") + ". Rows are in this order." : "";
+  const order = im ? im.ranking.map(([k]) => k) : fam.params;
+  for (const k of order) {
+    const row = h("div", { class: "prow" }, box);
+    const nm = h("div", { class: "nm" }, row); h("b", {}, nm, k); h("span", {}, nm, PDESC[k] || "");
+    const W = 420, Hh = 40; const svg = s("svg", { viewBox: "0 0 " + W + " " + Hh, preserveAspectRatio: "none", role: "img", "aria-label": "Sensible range of " + k }, row);
+    const pr = fam.targets.IF.posterior[k].prior, lo = pr[0], hi = pr[1];
+    const X = (v) => 4 + (v - lo) / Math.max(hi - lo, 1e-9) * (W - 8);
+    s("rect", { x: 4, y: 0, width: W - 8, height: Hh, rx: 3, style: "fill:var(--chip);fill-opacity:0.45" }, svg);
+    [["IF", 8], ["Allen", 20], ["cKO", 32]].forEach(([t, y]) => {
+      const R_ = rangeOf(fam, t, k); if (!R_) return; const q = R_.q, c = TCOL[t];
+      const op = R_.refined ? 1 : 0.4;
+      s("line", { x1: X(q[0]), x2: X(q[4]), y1: y, y2: y, style: "stroke:" + c + ";stroke-width:1.5;stroke-opacity:" + op }, svg);
+      s("rect", { x: X(q[1]), y: y - 3.5, width: Math.max(2, X(q[3]) - X(q[1])), height: 7, rx: 2, style: "fill:" + c + ";fill-opacity:" + op }, svg);
+      s("circle", { cx: X(q[2]), cy: y, r: 3.6, style: "fill:var(--surface);stroke:" + c + ";stroke-width:2;stroke-opacity:" + op }, svg);
+    });
+    const r = h("div", { class: "rate" }, row);
+    const post = fam.targets[rateTarget] ? fam.targets[rateTarget].posterior[k] : null;
+    const rs = s("svg", { viewBox: "0 0 120 30", preserveAspectRatio: "none", role: "img", "aria-label": "Sensible rate across the range of " + k }, r);
+    if (post) { const mx = Math.max(...post.rate, 1e-9); post.rate.forEach((v, i) => { const hgt = 2 + 26 * v / mx; s("rect", { x: i * 12 + 1, y: 30 - hgt, width: 10, height: hgt, rx: 1.5, style: "fill:" + (rateTarget === "Allen" ? "var(--s2)" : rateTarget === "cKO" ? "var(--s3)" : "var(--s1)") + ";fill-opacity:" + (0.25 + 0.75 * v / mx) }, rs); }); }
+    const ticks = h("div", { class: "small", style: "font:10.5px var(--mono);display:flex;justify-content:space-between;grid-column:2" }, row);
+    h("span", {}, ticks, fmt(lo)); h("span", {}, ticks, fmt(hi));
+  }
+}
+(function () {
+  const S1 = $("rate-target"), S2 = $("param-fam");
+  for (const [t, nm] of [["IF", "your controls"], ["Allen", "Allen P7"], ["cKO", "EZH2 cKO"]]) { const b = h("button", { type: "button", "aria-pressed": String(t === rateTarget) }, S1, nm); b.addEventListener("click", () => { rateTarget = t; S1.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawParams(); }); }
+  for (const f of Object.keys(D.families)) { const b = h("button", { type: "button", "aria-pressed": String(f === paramFam) }, S2, FAMNAME[f]); b.addEventListener("click", () => { paramFam = f; S2.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawParams(); }); }
+  drawParams();
+})();
+
+/* refinement */
+const TNAME = { IF: "your controls", Allen: "Allen P7", cKO: "your EZH2 cKO" };
+(function () {
+  const note = $("refine-note"), box = $("refine-gallery");
+  const R = D.refine || [];
+  if (!R.length) { $("refine-plate").hidden = true; return; }
+  h("h3", {}, note, "Searching around the closest values");
+  h("p", {}, note, "No model produced a section like the real ones from the broad sampling, so the closest parameter sets of the best models were perturbed and sampled again, four rounds, each restarting from the 30 closest sets found so far with steps of half their spread. Distance is in units of the real spread; a section passes when it is below the target's own threshold (" + D.targets.IF.threshold + " for your controls, " + D.targets.Allen.threshold + " for Allen P7, " + D.targets.cKO.threshold + " for your cKO).");
+  const tw = h("div", { class: "plate tbl" }); note.after(tw);
+  const T = h("table", {}, tw);
+  T.innerHTML = "<thead><tr><th>Model</th><th>Like</th><th>Closest distance by round</th><th>Passed</th><th>Still off among the closest</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const v of R) {
+    const tr = h("tr", {}, tb); h("td", {}, tr, FAMNAME[v.family]); h("td", {}, tr, TNAME[v.target]);
+    h("td", { class: "num" }, tr, v.rounds.map((r) => r.best.toFixed(2)).join(" → "));
+    h("td", { class: "num" }, tr, v.sensible + " of " + v.n.toLocaleString() + " (" + v.pct + "%)");
+    h("td", { class: "sub" }, tr, v.still_off.map(([k, z]) => D.stat_names[k].split(",")[0].split("(")[0].trim() + " " + z.toFixed(1)).join("; "));
+  }
+  for (const v of R) for (const g of v.gallery) {
+    const c = h("div", { class: "cell" }, box);
+    drawSection(s("svg", { role: "img", "aria-label": "Refined synthetic section" }, c), g.svg);
+    const thr = D.targets[v.target].threshold;
+    const cap = h("div", { class: "cap" }, c); h("span", { class: "pill " + (g.d <= thr ? "ok" : "no") }, cap, g.d <= thr ? "passes" : "close"); cap.append(" " + FAMNAME[v.family] + ", like " + TNAME[v.target] + " · distance " + g.d.toFixed(2));
+    h("div", {}, cap, "IGL width " + fmt(g.stats.w_med) + " µm, depth " + fmt(g.stats.d_med) + " µm, ML " + fmt(g.stats.ml_med) + " µm, " + Math.round(g.stats.igl_frac * 100) + "% IGL");
+  }
+})();
+
+/* contrasts */
+(function () {
+  const box = $("contrast"); const C = D.contrasts || [];
+  if (!C.length) { $("contrast-sec").hidden = true; return; }
+  for (const c of C) {
+    h("h3", {}, box, FAMNAME[c.family] + ": like " + TNAME[c.a] + " (" + c.na + ") vs like " + TNAME[c.b] + " (" + c.nb + ")");
+    const tw = h("div", { class: "plate tbl" }, box); const T = h("table", {}, tw);
+    T.innerHTML = "<thead><tr><th>Parameter</th><th>" + TNAME[c.a] + ": median [IQR]</th><th>" + TNAME[c.b] + ": median [IQR]</th><th>Shift (IQRs)</th></tr></thead>";
+    const tb = h("tbody", {}, T);
+    for (const [k, ma, ia, mb, ib, sh] of c.rows.slice(0, 10)) {
+      const tr = h("tr", {}, tb); const td = h("td", {}, tr); h("b", {}, td, k); td.append(" " + (PDESC[k] || ""));
+      h("td", { class: "num" }, tr, fmt(ma) + " [" + fmt(ia) + "]"); h("td", { class: "num" }, tr, fmt(mb) + " [" + fmt(ib) + "]");
+      h("td", { class: "num" }, tr, (sh > 0 ? "+" : "") + sh.toFixed(2));
+    }
+  }
+})();
+
+/* twins */
+(function () {
+  const box = $("twins");
+  for (const t of D.twins) {
+    const c = h("div", { class: "cell" }, box);
+    const pair = h("div", { class: "pair" }, c);
+    drawSection(s("svg", { role: "img", "aria-label": "Real section " + t.real }, pair), t.real_svg);
+    drawSection(s("svg", { role: "img", "aria-label": "Synthetic twin of " + t.real }, pair), t.syn_svg);
+    const cap = h("div", { class: "cap" }, c); h("b", {}, cap, t.real); cap.append(" (left) and its twin from the " + FAMNAME[t.family].toLowerCase() + " model" + (t.refined ? ", refined" : "") + " (right), distance " + t.d.toFixed(2));
+    const L = (st) => "width " + fmt(st.w_med) + ", depth " + fmt(st.d_med) + ", ML " + fmt(st.ml_med) + " µm, " + Math.round(st.igl_frac * 100) + "% IGL";
+    h("div", {}, cap, "real: " + L(t.real_stats)); h("div", {}, cap, "twin: " + L(t.syn_stats));
+  }
+})();
+
+/* free ribbon */
+(function () {
+  const T = $("ribbon-table"), F = D.free_ribbon;
+  T.innerHTML = "<thead><tr><th>Bending</th><th>Ribbon length</th><th>Centre line crosses itself</th><th>Ribbon touches itself (57 µm wide)</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const [b, nm] of [["1.0", "as measured on real ribbons"], ["0.3", "stiffer, as in the gap model"]]) for (const L of ["500", "2000", "13000"]) {
+    const tr = h("tr", {}, tb); h("td", {}, tr, nm); h("td", { class: "num" }, tr, L === "13000" ? "13 mm (a whole IGL)" : L + " µm");
+    h("td", { class: "num" }, tr, Math.round(F[b][L] * 100) + "%"); h("td", { class: "num" }, tr, F[b]["contact_" + L] != null ? Math.round(F[b]["contact_" + L] * 100) + "%" : "–");
+  }
+})();
+</script>

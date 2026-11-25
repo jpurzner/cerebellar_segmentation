@@ -1,0 +1,237 @@
+<title>Gap Filler Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: same family as IGL Anomaly Check — summary up top, then one card per test gap with its panels in a row */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --plate: #0b0e12;
+  --tp: #3be0ff; --fp: #ffb000; --fn: #ff3b8a; --igl: #aab4c0; --wm: #8c7348; --egl: #7a5aa6; --tissue: #3a424d;
+  --bar: #1d5b86;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --bar: #82b8e2; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --bar: #82b8e2; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+p { margin: 0; max-width: 76ch; }
+.lede { color: var(--fg2); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+td.sub { padding-left: 22px; color: var(--fg2); }
+tr.best td { font-weight: 500; }
+.barcell { width: 160px; }
+.bar { height: 10px; background: var(--chip); border-radius: 2px; position: relative; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); border-radius: 0 4px 4px 0; }
+.seg2 { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg2 button, .pick { font: 13px var(--text); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 30px; }
+.seg2 button[aria-pressed="true"], .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled { opacity: 0.55; cursor: default; }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.muted { color: var(--muted); font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--fg2); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; vertical-align: -2px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.gap { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.gap header { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.gap header .k { font: 500 12px var(--mono); color: var(--muted); }
+.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+figure .img { background: var(--plate); border-radius: 4px; overflow: hidden; }
+figure img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+figcaption { display: flex; justify-content: space-between; gap: 6px; align-items: center; font-size: 13px; }
+figcaption .d { font: 12px var(--mono); color: var(--fg2); }
+.pick { min-height: 28px; padding: 2px 9px; font-size: 12px; }
+.answer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+textarea { flex: 1 1 260px; box-sizing: border-box; min-height: 34px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+.scale { font: 11px var(--mono); color: var(--muted); }
+.findings { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; max-width: 80ch; }
+.findings li::marker { color: var(--accent); font-weight: 600; }
+.rec { display: inline-block; margin-left: 8px; font: 500 11px var(--mono); padding: 1px 6px; border-radius: 8px; background: var(--accent); color: var(--accent-fg); vertical-align: 1px; }
+tr.recrow td { background: var(--chip); }
+.flag { font: 500 12px var(--mono); color: var(--fp); }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>Gap Filler Test</h1>
+  <p class="lede" id="lede"></p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+
+<section class="card">
+  <h2>What came out</h2>
+  <ol class="findings" id="findings"></ol>
+</section>
+
+<section class="card">
+  <div class="toolbar">
+    <h2 style="margin-right:auto">How well each method refills a cut gap</h2>
+    <div class="seg2" role="group" aria-label="Scenario" id="sc-tabs"></div>
+  </div>
+  <p class="muted" id="sc-desc"></p>
+  <div class="tbl"><table id="sum"></table></div>
+  <p class="muted" id="sum-note"></p>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+  <div class="toolbar">
+    <h2 style="margin-right:auto">Examples: which fill would you keep?</h2>
+    <div class="seg2" role="group" aria-label="Show examples" id="ex-tabs"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--tp)"></i>Filled correctly (in the gold-standard panel: the gap to fill)</span>
+    <span><i style="background:var(--fp)"></i>Filled but not IGL</span>
+    <span><i style="background:var(--fn)"></i>IGL missed</span>
+    <span><i style="background:var(--igl)"></i>IGL kept on both sides</span>
+    <span><i style="background:var(--wm)"></i>White matter label</span>
+    <span><i style="background:var(--egl)"></i>EGL</span>
+    <span><i style="background:var(--tissue)"></i>Other tissue</span>
+  </div>
+  <p class="muted">Pick the fill you would keep for each gap, or None if none of them is acceptable. Answers save automatically.</p>
+  <div id="gaps" style="display:flex;flex-direction:column;gap:14px"></div>
+</section>
+</div>
+<script>
+const DATA = __DATA__;
+const state = {}, chains = {};
+let db = null;
+const statusEl = document.getElementById("status");
+function setStatus(t, err) { statusEl.textContent = t; statusEl.classList.toggle("err", !!err); }
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+const SC = {
+  erased: ["IGL erased", "The gap's IGL is simply missing (unlabelled tissue). White-matter labels are correct."],
+  as_wm: ["IGL labelled as white matter", "The gap's IGL carries the white-matter label, as when bleached IGL is called white matter. Methods that trust the white-matter labels cannot see it."] };
+
+document.getElementById("lede").textContent =
+  "Gaps of 50–500 µm were cut one at a time into the IGL of the gold standard s1_2 (" + DATA.n + " gaps) and refilled without seeing the answer" +
+  (DATA.n_others ? ", then checked on " + DATA.n_others + " more controls (" + DATA.others.join(", ") + ", 36 gaps each)" : "") + ". " +
+  "The outline-driven filler predicts IGL from the shape of the section: everything deeper than the ML (m below the EGL, m measured on the IGL either side of the gap) " +
+  "that is not white matter, kept only along the corridor joining the two ends. The ribbon gap model instead continues the ribbon from both ends with the flank width. " +
+  "The combined method uses the outline filler with the white-matter labels, but switches to the ribbon model with the labels ignored when the outline says " +
+  "white-matter labels sit where the IGL should continue (white matter in the shallow half of the expected IGL band, where real white matter almost never is).";
+(function () { const ol = document.getElementById("findings"); for (const t of DATA.findings || []) { const li = h("li", {}, ol); li.innerHTML = t; } })();
+
+/* summary */
+let curSc = "erased";
+const scTabs = document.getElementById("sc-tabs");
+for (const k of Object.keys(SC)) {
+  const b = h("button", { type: "button", "aria-pressed": String(k === curSc) }, scTabs, SC[k][0]);
+  b.addEventListener("click", () => { curSc = k; scTabs.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); drawSum(); });
+}
+function drawSum() {
+  document.getElementById("sc-desc").textContent = SC[curSc][1];
+  const T = document.getElementById("sum"); T.textContent = "";
+  const hd = h("thead", {}, T), tr0 = h("tr", {}, hd);
+  const cols = ["Method", "Mean Dice", "", "Median", "≥ 0.8", "< 0.5", "Precision", "Recall"];
+  if (DATA.n_others) cols.push("Other controls");
+  for (const c of cols) h("th", {}, tr0, c);
+  const tb = h("tbody", {}, T);
+  const rows = DATA.rows[curSc];
+  const top = Math.max(...rows.map((r) => r.mean));
+  for (const r of rows) {
+    const tr = h("tr", { class: (r.mean === top ? "best " : "") + (r.key === "combined" ? "recrow" : "") }, tb);
+    const sub = r.label.startsWith("  ");
+    const td0 = h("td", { class: sub ? "sub" : "" }, tr, r.label.trim());
+    if (r.key === "combined") h("span", { class: "rec" }, td0, "recommended");
+    h("td", { class: "num" }, tr, r.mean.toFixed(2));
+    const bc = h("td", { class: "barcell" }, tr); const bar = h("div", { class: "bar", role: "img", "aria-label": "mean Dice " + r.mean.toFixed(2) }, bc);
+    h("i", {}, bar).style.width = Math.max(0, r.mean) * 100 + "%";
+    h("td", { class: "num" }, tr, r.median.toFixed(2));
+    h("td", { class: "num" }, tr, Math.round(r.ge08 * 100) + "%");
+    h("td", { class: "num" }, tr, Math.round(r.lt05 * 100) + "%");
+    h("td", { class: "num" }, tr, r.prec.toFixed(2));
+    h("td", { class: "num" }, tr, r.rec.toFixed(2));
+    if (DATA.n_others) h("td", { class: "num" }, tr, r.others == null ? "–" : r.others.toFixed(2));
+  }
+  document.getElementById("sum-note").textContent =
+    "Dice = overlap of the fill with the removed IGL (1 = perfect). ≥ 0.8 and < 0.5: share of gaps filled well and badly. Precision = share of the fill that is IGL; " +
+    "recall = share of the missing IGL that was filled." + (DATA.n_others ? " Other controls: mean Dice on " + DATA.n_others + " more sections, 36 gaps each." : "") +
+    " The combined method's outline test fired on " + Math.round(DATA.switched[curSc] * 100) + "% of these gaps in s1_2" +
+    (DATA.switched_others && DATA.switched_others[curSc] != null ? " and " + Math.round(DATA.switched_others[curSc] * 100) + "% in the other controls." : ".");
+}
+drawSum();
+
+/* examples */
+let exSc = "erased";
+const exTabs = document.getElementById("ex-tabs");
+for (const k of Object.keys(SC)) {
+  const n = DATA.items.filter((i) => i.scenario === k).length;
+  const b = h("button", { type: "button", "aria-pressed": String(k === exSc) }, exTabs, SC[k][0] + " (" + n + ")");
+  b.addEventListener("click", () => { exSc = k; exTabs.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); showEx(); });
+}
+const gapsEl = document.getElementById("gaps");
+for (const it of DATA.items) {
+  const card = h("article", { class: "gap", id: "g-" + it.id }, gapsEl);
+  card.dataset.sc = it.scenario;
+  const hd = h("header", {}, card);
+  h("h3", {}, hd, "Gap " + (it.gap + 1));
+  h("span", { class: "k" }, hd, it.length_um + " µm long · IGL " + it.width[0] + "/" + it.width[1] + " µm wide at the ends · " + SC[it.scenario][0]);
+  if (it.switched) h("span", { class: "flag" }, hd, "outline test fired: white-matter labels distrusted");
+  const pn = h("div", { class: "panels" }, card);
+  for (const p of it.panels) {
+    const f = h("figure", {}, pn);
+    const im = h("div", { class: "img" }, f);
+    h("img", { src: p.img, alt: p.label + (p.dice != null ? ", Dice " + p.dice.toFixed(2) : ""), loading: "lazy" }, im);
+    const cap = h("figcaption", {}, f);
+    const left = h("span", {}, cap, p.label);
+    if (p.dice != null) {
+      h("span", { class: "d" }, left, "  " + p.dice.toFixed(2));
+      const b = h("button", { type: "button", class: "pick", "aria-pressed": "false", "aria-label": "Keep " + p.label + " for gap " + (it.gap + 1) }, cap, "Keep");
+      b.dataset.v = p.key; b.disabled = true;
+      b.addEventListener("click", () => toggle(it.id, p.key));
+    }
+  }
+  const ans = h("div", { class: "answer" }, card);
+  const nb = h("button", { type: "button", class: "pick", "aria-pressed": "false" }, ans, "None is acceptable");
+  nb.dataset.v = "none"; nb.disabled = true; nb.addEventListener("click", () => toggle(it.id, "none"));
+  const ta = h("textarea", { id: "note-" + it.id, placeholder: "Notes", "aria-label": "Notes for gap " + (it.gap + 1) }, ans); ta.disabled = true;
+  ta.addEventListener("change", () => { const cur = get(it.id); cur.note = ta.value.trim(); save(it.id, cur); });
+  h("span", { class: "scale" }, card, "1 image pixel = 4 µm");
+}
+function showEx() { gapsEl.querySelectorAll("article.gap").forEach((c) => { c.hidden = c.dataset.sc !== exSc; }); }
+showEx();
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+function toggle(id, v) { const cur = get(id); cur.pick = cur.pick === v ? null : v; save(id, cur); }
+function paint(id) {
+  const c = document.getElementById("g-" + id); if (!c) return; const cur = state[id] || {};
+  c.querySelectorAll("button.pick").forEach((b) => b.setAttribute("aria-pressed", String(cur.pick === b.dataset.v)));
+  const ta = document.getElementById("note-" + id); if (ta && document.activeElement !== ta) ta.value = cur.note || "";
+}
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString(); state[id] = cur; paint(id); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc("gapfill/" + id).set(cur)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus(e && e.code === "invalid_argument" ? "You can view this page but not save answers." : "Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to pick fills.", true); return; }
+  document.querySelectorAll("button.pick, textarea").forEach((b) => { b.disabled = false; });
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection("gapfill").onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Answers load and save automatically"); }
+    DATA.items.forEach((i) => paint(i.id));
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

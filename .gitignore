@@ -68,6 +68,7 @@ python/egl_lines/
 python/egl_boundary_masks/
 python/egl_full_masks/
 python/depth_model/out/
+python/shape_model/out/
 python/layer_masks/
 python/matlab_anomaly_10x/
 
@@ -91,3 +92,6 @@ python/dino/corrected_labels/
 
 # CSV outputs / metrics files
 *.csv
+python/atlas_labels/outputs/
+python/atlas_labels/figures/
+python/atlas_labels/**/__pycache__/

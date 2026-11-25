@@ -572,10 +572,16 @@ Brainstorm — none of these has been tried yet:
 
 A depth-coordinate version of idea 3: unroll the cortex into
 (arclength along oEGL, Laplace depth from oEGL to DWL), learn per-layer
-depth bands from the 11 10x slides, and relabel pixels whose depth
-disagrees with their label. It relabels 0.65 % of cortex pixels on the
-10x set, mostly at the ML/IGL boundary. It does not yet fill unassigned
-(label 1) or anomaly pixels. See `python/depth_model/README.md`.
+depth bands, and relabel pixels whose depth disagrees with their label.
+Scored out of sample against the gold slide, no setting improves on the
+unmodified labels (270 tried). Evaluating it turned up two anatomy rules
+that do help: DWL or DCN with no IGL between it and the EGL, close to
+the EGL, is relabelled ML (DWL) or nearest cortex (DCN). Gold accuracy
+on s1_2 goes 0.831 → 0.847 (ML IoU 0.66 → 0.69, DWL IoU 0.74 → 0.79).
+Also worth knowing: the gold slide itself fails the continuity test
+(ML 56 %, IGL 52 % in the largest piece), so ML/IGL fragmentation at
+that level is not by itself evidence of error. See
+`python/depth_model/README.md`.
 
 ### Specific failure modes the model should target
 

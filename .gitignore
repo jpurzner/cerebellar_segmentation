@@ -92,3 +92,6 @@ python/dino/corrected_labels/
 
 # CSV outputs / metrics files
 *.csv
+python/atlas_labels/outputs/
+python/atlas_labels/figures/
+python/atlas_labels/**/__pycache__/

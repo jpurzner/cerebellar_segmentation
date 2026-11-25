@@ -1,0 +1,466 @@
+<title>Flattened Cerebellum</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: lab report — what was built and the per-section numbers first, then one section at a time: overview with the reference line beside the unrolled strips; same family as the IGL pages */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --good: #2f7d3b; --plate: #0b0e12;
+  --f-miss: #ff9a1f; --f-off: #ff3fd2; --f-noml: #ff4a4a; --f-you: #ffffff;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+p { margin: 0; max-width: 80ch; }
+.lede { color: var(--fg2); }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.muted { color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.findings { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; max-width: 84ch; }
+.findings li::marker { color: var(--accent); font-weight: 600; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12px; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--chip); }
+tbody tr.sel td { background: var(--chip); font-weight: 600; }
+.tag { font: 500 11px var(--mono); padding: 1px 6px; border-radius: 8px; background: var(--chip); color: var(--fg2); }
+.tag.cko { background: #ff961e; color: #1a0d00; }
+.vd { font: 500 11px var(--mono); color: var(--muted); }
+.vd.ok { color: var(--good); } .vd.bad { color: var(--bad); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.ctl { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--fg2); }
+.seg { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.seg button, .pick { font: 13px var(--text); padding: 4px 11px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 30px; }
+.seg button[aria-pressed="true"], .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.seg button[data-mode="flag"][aria-pressed="true"] { background: #ffd60a; border-color: #ffd60a; color: #1a1500; }
+button:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled, textarea:disabled { opacity: 0.5; cursor: default; }
+select { font: 13px var(--text); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); min-height: 30px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--fg2); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; vertical-align: -2px; }
+.legend i.line { height: 3px; vertical-align: 3px; }
+.viewer { display: grid; grid-template-columns: minmax(260px, 34%) 1fr; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .viewer { grid-template-columns: 1fr; } .over { position: static !important; } }
+.over { position: sticky; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.over canvas { width: 100%; height: auto; display: block; background: var(--plate); border-radius: 4px; cursor: crosshair; }
+.strips { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.row { background: var(--plate); border-radius: 4px; overflow: hidden; }
+.row canvas { display: block; }
+.read { font: 12px var(--mono); color: var(--fg2); min-height: 18px; }
+.answer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.answer .prev { flex-basis: 100%; margin: 0; }
+textarea { flex: 1 1 280px; box-sizing: border-box; min-height: 34px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+.spots { display: flex; flex-wrap: wrap; gap: 6px; font: 12px var(--mono); color: var(--fg2); }
+.spots button { font: 12px var(--mono); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); cursor: pointer; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--fg2); }
+.stats b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>Flattened cerebellum</h1>
+  <p class="lede" id="lede">Each section is unrolled along the outer face of the EGL: the reference line runs along the surface, down one side of every fissure and back up the other. Columns run inward from it at right angles, so the layers should come out as horizontal bands and a wrong IGL call should show up as a break in the band.</p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+
+<section class="card">
+  <h2>What came out</h2>
+  <ol class="findings" id="findings"></ol>
+</section>
+
+<section class="card">
+  <h2>Every section</h2>
+  <p class="muted" id="tabnote">Numbers use the current labels (reviewed controls, your corrected cKO sections, MATLAB for s1_5), over the stretch of reference line with EGL under it. &ldquo;IGL present&rdquo;: share of that stretch with IGL in the column. &ldquo;Line pieces&rdquo;: separate stretches of the fitted IGL line over 100 µm. &ldquo;Short columns&rdquo;: columns that end within 60 µm with no IGL, mostly where the reference line is likely wrong. Click a row to open it.</p>
+  <div class="tbl"><table id="tab"></table></div>
+</section>
+
+<section class="card" id="view">
+  <div class="bar">
+    <h2 id="vtitle" style="margin-right:auto">Section</h2>
+    <label class="ctl">Section <select id="pick" aria-label="Section"></select></label>
+  </div>
+  <div class="stats" id="vstats"></div>
+  <div class="bar">
+    <span class="ctl">Stain <span class="seg" role="group" aria-label="Stain" id="stain"></span></span>
+    <span class="ctl">Labels <span class="seg" role="group" aria-label="Labels" id="labs"></span></span>
+    <span class="ctl">Show <span class="seg" role="group" aria-label="Show" id="show"></span></span>
+    <span class="ctl">Zoom <span class="seg" role="group" aria-label="Zoom" id="zoom"></span></span>
+    <span class="ctl">Mode <span class="seg" role="group" aria-label="Mode" id="mode"></span></span>
+  </div>
+  <div class="legend" id="legend">
+    <span><i style="background:rgba(59,224,255,0.6)"></i>EGL</span>
+    <span><i style="background:rgba(255,214,10,0.7)"></i>IGL</span>
+    <span><i style="background:rgba(176,124,255,0.55)"></i>white matter</span>
+    <span><i style="background:rgba(255,70,70,0.65)"></i>anomaly (tear / bleach)</span>
+    <span><i style="background:rgba(120,130,145,0.85)"></i>no EGL on the reference (cut edge, base): not fitted</span>
+    <span><i class="line" style="background:#fff"></i>line fitted through the IGL top and bottom</span>
+    <span><i class="line" style="background:var(--f-miss)"></i>bridged gap / IGL missing under the line</span>
+    <span><i class="line" style="background:var(--f-off)"></i>IGL boundary off the line</span>
+    <span><i class="line" style="background:var(--f-noml)"></i>IGL touches the EGL, no ML</span>
+  </div>
+  <div class="viewer">
+    <div class="over">
+      <canvas id="ov" aria-label="Section overview with the reference line"></canvas>
+      <p class="muted" id="ovnote">Nuclei grey, NeuN green; magenta: fissure midlines the line was cut along. The reference line is cyan where it has EGL under it, grey where not; numbers are millimetres along it. Hover a strip to see that column here; click here to jump the strips to that spot.</p>
+      <div class="read" id="read"></div>
+    </div>
+    <div class="strips">
+      <p class="muted">Each band is a stretch of the reference line, left to right, with the surface at the top and depth going down (1 pixel = 2 µm at zoom 1, 300 µm deep). In Flag mode, click a spot that is wrong; click it again to remove it.</p>
+      <div id="rows" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+  <div class="answer" id="answer"></div>
+  <div class="spots" id="spots"></div>
+</section>
+</div>
+<script>
+const DATA = __DATA__;
+const state = {}, chains = {};
+let db = null;
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("err", !!err); }
+const mm = (um) => (um / 1000).toFixed(1);
+const LABS = DATA.labsets || [["matlab", "MATLAB"], ["current", "Current"]], MAIN = DATA.main || "current";
+if (DATA.lede) $("lede").innerHTML = DATA.lede;
+if (DATA.table_note) $("tabnote").innerHTML = DATA.table_note;
+if (DATA.over_note) $("ovnote").innerHTML = DATA.over_note;
+if (DATA.legend_extra) $("legend").insertAdjacentHTML("beforeend", DATA.legend_extra);
+const VERDICTS = [["right", "Flattening looks right"], ["places", "Right, with problems in places"], ["wrong", "Flattening is wrong"]];
+for (const t of DATA.findings || []) { const li = h("li", {}, $("findings")); li.innerHTML = t; }
+
+const view = { stain: "dapi", labs: MAIN, fit: true, flags: true, zoom: 1, mode: "look", cur: null };
+const cache = {};
+
+/* ---------- table ---------- */
+function verdictText(id) { const v = (state[id] || {}).verdict; const f = VERDICTS.find((x) => x[0] === v); return f ? f[1] : "not checked"; }
+function buildTable() {
+  const T = $("tab"); T.textContent = "";
+  const tr0 = h("tr", {}, h("thead", {}, T));
+  const XC = DATA.extra_cols || [];
+  for (const c of ["Section", "", "Reference line", "EGL under it", "IGL present", "Line pieces", "Bridged", "Missing", "Off the line", "No ML", "Short columns", "IGL top", ...XC.map((q) => q[0]), "Your check"]) h("th", {}, tr0, c);
+  const tb = h("tbody", {}, T);
+  for (const s of DATA.sections) {
+    const r = s.stats, c = r[MAIN];
+    const tr = h("tr", { "data-id": s.short, tabindex: "0" }, tb);
+    h("td", {}, tr, s.short + (s.short === "s1_2" ? " (gold)" : ""));
+    const tg = h("td", {}, tr); h("span", { class: "tag" + (s.group === "cKO" ? " cko" : "") }, tg, s.group);
+    h("td", { class: "num" }, tr, mm(r.length_um) + " mm");
+    h("td", { class: "num" }, tr, Math.round(r.covered_frac * 100) + "%");
+    h("td", { class: "num" }, tr, Math.round(c.igl_present_um / Math.max(c.covered_um, 1) * 100) + "%");
+    h("td", { class: "num" }, tr, String(c.segments));
+    for (const k of ["bridged_um", "missing_um", "off_um", "no_ml_um", "short_columns_um"]) h("td", { class: "num" }, tr, mm(c[k]) + " mm");
+    h("td", { class: "num" }, tr, c.igl_top_med_um == null ? "–" : Math.round(c.igl_top_med_um) + " µm");
+    for (const [, key] of XC) h("td", { class: "num" }, tr, (r.extra || {})[key] ?? "–");
+    const v = (state[s.short] || {}).verdict;
+    h("td", { class: "vd" + (v === "right" ? " ok" : v ? " bad" : "") }, tr, verdictText(s.short));
+    tr.addEventListener("click", () => open(s.short, true));
+    tr.addEventListener("keydown", (e) => { if (e.key === "Enter") open(s.short, true); });
+  }
+  markSel();
+}
+function markSel() { document.querySelectorAll("#tab tbody tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.id === view.cur)); }
+
+/* ---------- controls ---------- */
+function seg(id, opts, key, cb) {
+  const g = $(id); g.textContent = "";
+  for (const [v, t] of opts) {
+    const b = h("button", { type: "button", "data-v": v, "aria-pressed": String(view[key] === v) }, g, t);
+    if (key === "mode") b.dataset.mode = v;
+    b.addEventListener("click", () => { view[key] = v; g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === v))); cb(); });
+  }
+}
+function toggles() {
+  const g = $("show"); g.textContent = "";
+  for (const [k, t] of [["fit", "Fitted line"], ["flags", "Flags"]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(view[k]) }, g, t);
+    b.addEventListener("click", () => { view[k] = !view[k]; b.setAttribute("aria-pressed", String(view[k])); drawRows(); });
+  }
+}
+seg("stain", [["dapi", "Nuclei"], ["neun", "NeuN"], ["p27", "p27"]], "stain", () => { compose(); drawRows(); });
+seg("labs", [["off", "Off"], ...LABS], "labs", () => { compose(); drawRows(); });
+seg("zoom", [[1, "1×"], [2, "2×"]], "zoom", () => layout());
+seg("mode", [["look", "Look"], ["flag", "Flag a spot"]], "mode", () => {});
+toggles();
+const pick = $("pick");
+for (const s of DATA.sections) h("option", { value: s.short }, pick, s.short + " · " + s.group);
+pick.addEventListener("change", () => open(pick.value, false));
+
+/* ---------- loading ---------- */
+function img(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("image " + src)); im.src = src; }); }
+async function load(sec) {
+  if (cache[sec.short]) return cache[sec.short];
+  const d = await (await fetch(sec.data)).json();
+  const F = d.files, [dapi, neun, p27, over, ...labIm] = await Promise.all([F.dapi, F.neun, F.p27, F.over, ...LABS.map(([k]) => F["lab_" + k])].map(img));
+  const C = { d, im: { dapi, neun, p27 }, over, lab: {} };
+  C.tiles = [];
+  for (let a = 0; a < d.N; a += TILE) {
+    const b = Math.min(d.N, a + TILE), cv = document.createElement("canvas"); cv.width = b - a; cv.height = d.Dn;
+    C.tiles.push({ a, b, cv });
+  }
+  LABS.forEach(([k], j) => { C.lab[k] = C.tiles.map((t) => colorize(labIm[j], d, t.a, t.b)); });
+  cache[sec.short] = C; return C;
+}
+function colorize(im, d, a, b) {
+  const W = b - a, H = d.Dn, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const x = c.getContext("2d"); x.drawImage(im, a, 0, W, H, 0, 0, W, H);
+  const id = x.getImageData(0, 0, W, H), p = id.data;
+  const code = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) code[i] = Math.round(p[i * 4] / 40);
+  const COL = { 2: [59, 224, 255, 95], 4: [255, 214, 10, 105], 5: [176, 124, 255, 80], 6: [255, 70, 70, 115] };
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
+    const i = y * W + xx, c0 = code[i], o = i * 4, col = COL[c0];
+    if (!col) { p[o + 3] = 0; continue; }
+    let edge = false;
+    if (c0 === 4) edge = (y > 0 && code[i - W] !== 4) || (y < H - 1 && code[i + W] !== 4);
+    p[o] = col[0]; p[o + 1] = col[1]; p[o + 2] = col[2]; p[o + 3] = edge ? 235 : col[3];
+  }
+  x.putImageData(id, 0, 0); return c;
+}
+function compose() {
+  const C = cache[view.cur]; if (!C) return; const d = C.d;
+  C.tiles.forEach((t, k) => {
+    const x = t.cv.getContext("2d"), W = t.b - t.a;
+    x.clearRect(0, 0, W, d.Dn); x.drawImage(C.im[view.stain], t.a, 0, W, d.Dn, 0, 0, W, d.Dn);
+    if (view.labs !== "off") x.drawImage(C.lab[view.labs][k], 0, 0);
+    x.fillStyle = "rgba(120,130,145,0.78)";
+    let prev = t.a;
+    for (const [a, b] of d.ok) { if (b <= t.a) continue; if (a >= t.b) break; if (a > prev) x.fillRect(prev - t.a, 0, a - prev, d.Dn); prev = Math.max(prev, b); }
+    if (prev < t.b) x.fillRect(prev - t.a, 0, t.b - prev, d.Dn);
+  });
+}
+
+/* ---------- strips ---------- */
+let rows = [];
+const AX = DATA.region_bars ? (DATA.shape_bars ? 37 : 32) : 22, TILE = 8192;
+function layout() {
+  const C = cache[view.cur]; if (!C) return;
+  const host = $("rows"); host.textContent = ""; rows = [];
+  const W = Math.max(200, host.clientWidth || 900), per = Math.floor(W / view.zoom), d = C.d;
+  for (let s0 = 0; s0 < d.N; s0 += per) {
+    const s1 = Math.min(d.N, s0 + per), div = h("div", { class: "row" }, host);
+    const cv = h("canvas", {}, div), dpr = window.devicePixelRatio || 1;
+    const w = (s1 - s0) * view.zoom, hh = AX + d.Dn * view.zoom;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(hh * dpr); cv.style.width = w + "px"; cv.style.height = hh + "px";
+    cv.setAttribute("aria-label", "Strip " + mm(s0 * d.step) + " to " + mm(s1 * d.step) + " mm");
+    const r = { s0, s1, cv, dpr }; rows.push(r);
+    cv.addEventListener("mousemove", (e) => hover(r, e));
+    cv.addEventListener("mouseleave", () => { drawOver(null); $("read").textContent = ""; });
+    cv.addEventListener("click", (e) => clickStrip(r, e));
+  }
+  drawRows();
+}
+function drawRows() { for (const r of rows) drawRow(r); }
+function drawRow(r) {
+  const C = cache[view.cur]; if (!C) return; const d = C.d, z = view.zoom;
+  const x = r.cv.getContext("2d"); x.setTransform(r.dpr, 0, 0, r.dpr, 0, 0);
+  const w = (r.s1 - r.s0) * z;
+  x.fillStyle = "#0b0e12"; x.fillRect(0, 0, w, AX + d.Dn * z);
+  x.imageSmoothingEnabled = false;
+  for (const t of C.tiles) {
+    const a = Math.max(t.a, r.s0), b = Math.min(t.b, r.s1); if (b <= a) continue;
+    x.drawImage(t.cv, a - t.a, 0, b - a, d.Dn, (a - r.s0) * z, AX, (b - a) * z, d.Dn * z);
+  }
+  // ticks every 0.5 mm, labels every 1 mm
+  x.fillStyle = "#c9d1dc"; x.font = "11px IBM Plex Mono, monospace";
+  const t0 = Math.ceil(r.s0 * d.step / 500) * 500;
+  for (let um = t0; um < r.s1 * d.step; um += 500) {
+    const px = (um / d.step - r.s0) * z; x.fillRect(px, um % 1000 ? 12 : 8, 1, um % 1000 ? 4 : 8);
+    if (um % 1000 === 0) x.fillText((um / 1000) + " mm", px + 3, 10);
+  }
+  for (const [a] of d.pieces) if (a > r.s0 && a < r.s1) { x.fillStyle = "#ffffff"; x.fillRect((a - r.s0) * z, AX, 2, d.Dn * z); }
+  const ls = view.labs === "off" ? MAIN : view.labs;
+  if (view.flags) {
+    const F = d.flags[ls], band = [["missing", "#ff9a1f", 16], ["off", "#ff3fd2", 18.5], ["no_ml", "#ff4a4a", 21]];
+    for (const [k, col, y] of band) { x.fillStyle = col; for (const [a, b] of F[k]) { if (b <= r.s0 || a >= r.s1) continue; x.fillRect((Math.max(a, r.s0) - r.s0) * z, y - 1, (Math.min(b, r.s1) - Math.max(a, r.s0)) * z, 2.2); } }
+  }
+  if (view.flags && d.regions) {
+    for (const [a, b, geo] of d.regions) {
+      if (b <= r.s0 || a >= r.s1) continue;
+      x.fillStyle = geo === 4 ? "#ff4040" : geo === 3 ? "#9678ff" : geo === 2 ? "#ff9a5a" : geo ? "#c8d0da" : "#4dff88";
+      x.fillRect((Math.max(a, r.s0) - r.s0) * z, geo >= 3 ? 32.5 : geo ? 28.5 : 24.5, (Math.min(b, r.s1) - Math.max(a, r.s0)) * z, 2.6);
+    }
+  }
+  if (view.fit) {
+    const f = d.fits[ls], br = new Uint8Array(d.N);
+    for (const [a, b] of f.bridged) br.fill(1, a, b);
+    for (const key of ["top", "bot"]) {
+      const v = f[key];
+      for (const bridged of [0, 1]) {
+        x.beginPath(); let pen = false;
+        for (let i = r.s0 - (r.s0 % 2); i < r.s1; i += 2) {
+          const y = v[i >> 1];
+          if (y < 0 || br[i] !== bridged || i < r.s0) { pen = false; continue; }
+          const X = (i - r.s0) * z, Y = AX + y / d.step * z;
+          if (pen) x.lineTo(X, Y); else { x.moveTo(X, Y); pen = true; }
+        }
+        x.setLineDash(bridged ? [5, 4] : []); x.lineWidth = 3; x.strokeStyle = "rgba(0,0,0,0.6)"; x.stroke();
+        x.lineWidth = 1.4; x.strokeStyle = bridged ? "#ff9a1f" : "#ffffff"; x.stroke(); x.setLineDash([]);
+      }
+    }
+  }
+  const sp = ((state[view.cur] || {}).spots) || [];
+  for (const s of sp) {
+    if (s.i < r.s0 || s.i >= r.s1) continue;
+    const X = (s.i - r.s0) * z, Y = AX + s.d / d.step * z;
+    x.beginPath(); x.arc(X, Y, 7, 0, Math.PI * 2); x.lineWidth = 3; x.strokeStyle = "#000"; x.stroke(); x.lineWidth = 2; x.strokeStyle = "#ffd60a"; x.stroke();
+    x.fillStyle = "#ffd60a"; x.beginPath(); x.moveTo(X - 5, 0); x.lineTo(X + 5, 0); x.lineTo(X, 7); x.fill();
+  }
+}
+function at(r, e) {
+  const b = r.cv.getBoundingClientRect(), C = cache[view.cur], d = C.d;
+  const i = Math.floor((e.clientX - b.left) / view.zoom) + r.s0, dep = ((e.clientY - b.top) - AX) / view.zoom * d.step;
+  return { i: Math.max(r.s0, Math.min(r.s1 - 1, i)), d: Math.max(0, Math.min(d.Dn * d.step, dep)) };
+}
+function hover(r, e) {
+  const p = at(r, e), C = cache[view.cur], d = C.d;
+  const covered = d.ok.some(([a, b]) => p.i >= a && p.i < b);
+  const regs = (d.regions || []).filter(([a, b]) => p.i >= a && p.i < b);
+  $("read").textContent = (p.i * d.step / 1000).toFixed(2) + " mm along the reference · depth " + Math.round(p.d) + " µm" + (covered ? "" : " · no EGL here") + regs.map((g) => " · " + g[3]).join("");
+  drawOver(p);
+}
+function clickStrip(r, e) {
+  if (view.mode !== "flag" || !db) return;
+  const p = at(r, e), cur = get(view.cur), sp = cur.spots || [];
+  const near = sp.findIndex((s) => Math.abs(s.i - p.i) * view.zoom < 9 && Math.abs(s.d - p.d) / cache[view.cur].d.step * view.zoom < 9);
+  if (near >= 0) sp.splice(near, 1); else sp.push({ i: p.i, d: Math.round(p.d) });
+  cur.spots = sp; save(view.cur, cur);
+}
+
+/* ---------- overview ---------- */
+function drawOver(p) {
+  const C = cache[view.cur]; if (!C) return; const d = C.d, cv = $("ov");
+  const W = C.over.width, H = C.over.height;
+  if (cv.width !== W) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"); x.drawImage(C.over, 0, 0);
+  const g = d.grid_um, Q = d.Q, okm = new Uint8Array(d.N);
+  for (const [a, b] of d.ok) okm.fill(1, a, b);
+  x.lineWidth = Math.max(1.2, W / 600);
+  const brk = new Set(d.pieces.map(([a]) => Math.ceil(a / 4)));
+  for (const want of [0, 1]) {
+    x.beginPath(); let pen = false;
+    for (let k = 0; k < Q.length / 2; k++) {
+      const i = k * 4;
+      if (brk.has(k)) pen = false;
+      if (okm[i] !== want) { pen = false; continue; }
+      const X = Q[2 * k + 1] / g, Y = Q[2 * k] / g;
+      if (pen) x.lineTo(X, Y); else { x.moveTo(X, Y); pen = true; }
+    }
+    x.strokeStyle = want ? "rgba(59,224,255,0.95)" : "rgba(150,160,175,0.9)"; x.stroke();
+  }
+  x.font = Math.round(Math.max(11, W / 70)) + "px IBM Plex Mono, monospace";
+  for (let um = 1000; um < d.N * d.step; um += 1000) {
+    const k = Math.round(um / d.step / 4); if (2 * k + 1 >= Q.length) break;
+    const X = Q[2 * k + 1] / g, Y = Q[2 * k] / g;
+    x.fillStyle = "#ffffff"; x.beginPath(); x.arc(X, Y, Math.max(2, W / 350), 0, Math.PI * 2); x.fill();
+    x.lineWidth = 3; x.strokeStyle = "#000"; x.strokeText(String(um / 1000), X + 4, Y - 4); x.fillText(String(um / 1000), X + 4, Y - 4);
+  }
+  for (const s of ((state[view.cur] || {}).spots) || []) {
+    const pt = colPoint(d, s.i, s.d); if (!pt) continue;
+    x.beginPath(); x.arc(pt[1] / g, pt[0] / g, Math.max(4, W / 160), 0, Math.PI * 2); x.lineWidth = 2.5; x.strokeStyle = "#ffd60a"; x.stroke();
+  }
+  if (p) {
+    const c = d.cols[Math.round(p.i / d.col_every)] || d.cols[d.cols.length - 1];
+    x.beginPath(); for (let k = 0; k < c.length / 2; k++) { const X = c[2 * k + 1] / g, Y = c[2 * k] / g; if (k) x.lineTo(X, Y); else x.moveTo(X, Y); }
+    x.lineWidth = Math.max(3, W / 250); x.strokeStyle = "#000"; x.stroke(); x.lineWidth = Math.max(1.6, W / 450); x.strokeStyle = "#ff4a4a"; x.stroke();
+    const pt = colPoint(d, p.i, p.d);
+    if (pt) { x.beginPath(); x.arc(pt[1] / g, pt[0] / g, Math.max(4, W / 160), 0, Math.PI * 2); x.lineWidth = 2; x.strokeStyle = "#fff"; x.stroke(); }
+  }
+}
+function colPoint(d, i, dep) {
+  const c = d.cols[Math.round(i / d.col_every)]; if (!c) return null;
+  const k = Math.min(c.length / 2 - 1, Math.round(dep / d.col_sub_um));
+  return [c[2 * k], c[2 * k + 1]];
+}
+$("ov").addEventListener("click", (e) => {
+  const C = cache[view.cur]; if (!C) return; const d = C.d, cv = $("ov"), b = cv.getBoundingClientRect();
+  const X = (e.clientX - b.left) / b.width * cv.width * d.grid_um, Y = (e.clientY - b.top) / b.height * cv.height * d.grid_um;
+  let best = 0, bd = Infinity;
+  for (let k = 0; k < d.Q.length / 2; k++) { const dd = (d.Q[2 * k] - Y) ** 2 + (d.Q[2 * k + 1] - X) ** 2; if (dd < bd) { bd = dd; best = k * 4; } }
+  const r = rows.find((rr) => best >= rr.s0 && best < rr.s1);
+  if (r) { r.cv.scrollIntoView({ behavior: "smooth", block: "center" }); drawOver({ i: best, d: 0 }); }
+});
+
+/* ---------- open a section ---------- */
+async function open(id, scroll) {
+  view.cur = id; pick.value = id; markSel();
+  const sec = DATA.sections.find((s) => s.short === id), r = sec.stats, c = r[MAIN];
+  $("vtitle").textContent = id + (id === "s1_2" ? " (gold standard)" : "") + " · " + sec.group;
+  const st = $("vstats"); st.textContent = "";
+  const add = (k, v) => { const sp = h("span", {}, st, k + " "); h("b", {}, sp, v); };
+  add("reference line", mm(r.length_um) + " mm"); add("EGL under it", Math.round(r.covered_frac * 100) + "%");
+  add("IGL present", Math.round(c.igl_present_um / Math.max(c.covered_um, 1) * 100) + "%"); add("line pieces", String(c.segments));
+  add("IGL top / thickness (median)", Math.round(c.igl_top_med_um) + " / " + Math.round(c.igl_thick_med_um) + " µm");
+  add("fissure cuts", (r.midline_um2 / 1e6).toFixed(3) + " mm²");
+  $("rows").textContent = "Loading…";
+  if (scroll) $("view").scrollIntoView({ behavior: "smooth", block: "start" });
+  try { await load(sec); } catch (e) { $("rows").textContent = "This section could not be loaded (" + e.message + ")."; return; }
+  if (view.cur !== id) return;
+  compose(); layout(); drawOver(null); paintAnswer();
+}
+function paintAnswer() {
+  const id = view.cur, box = $("answer"); box.textContent = "";
+  const cur = state[id] || {};
+  for (const [v, t] of VERDICTS) {
+    const b = h("button", { type: "button", class: "pick", "data-v": v, "aria-pressed": String(cur.verdict === v) }, box, t);
+    b.disabled = !db;
+    b.addEventListener("click", () => { const c = get(id); c.verdict = c.verdict === v ? null : v; save(id, c); });
+  }
+  const ta = h("textarea", { placeholder: "Notes on this section", "aria-label": "Notes for " + id }, box);
+  ta.value = cur.note || ""; ta.disabled = !db;
+  ta.addEventListener("change", () => { const c = get(id); c.note = ta.value.trim(); save(id, c); });
+  const sec = DATA.sections.find((s) => s.short === id);
+  if (sec && sec.prev_note) { const p = h("p", { class: "muted prev" }, box); h("b", {}, p, "Your note on the last version: "); p.appendChild(document.createTextNode(sec.prev_note)); }
+  const sp = $("spots"); sp.textContent = "";
+  const list = cur.spots || [];
+  if (list.length) h("span", {}, sp, "Your flagged spots:");
+  list.forEach((s, k) => {
+    const b = h("button", { type: "button", title: "Remove this spot" }, sp, (s.i * cache[id].d.step / 1000).toFixed(2) + " mm, " + s.d + " µm ×");
+    b.disabled = !db;
+    b.addEventListener("click", () => { const c = get(id); c.spots.splice(k, 1); save(id, c); });
+  });
+}
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+function refresh(id) {
+  if (id === view.cur && cache[id]) { drawRows(); drawOver(null); if (document.activeElement && document.activeElement.tagName === "TEXTAREA") return; paintAnswer(); }
+}
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString(); state[id] = cur; refresh(id); buildTable(); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc(DATA.collection + "/" + id).set(cur)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus("Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+let resizeT = null;
+window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(layout, 200); });
+buildTable();
+open(DATA.sections[0].short, false);
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to check the sections.", true); return; }
+  if (view.cur && cache[view.cur]) paintAnswer();
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection(DATA.collection).onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Answers load and save automatically"); }
+    buildTable(); if (view.cur) refresh(view.cur);
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

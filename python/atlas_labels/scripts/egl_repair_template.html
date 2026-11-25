@@ -1,0 +1,257 @@
+<title>EGL Repair</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: lab report — what the line depends on and the per-section numbers first, then one card per section: nuclei image with the IGL call and the reference line; same family as the IGL pages */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --good: #2f7d3b; --plate: #0b0e12;
+  --c-egl: #3be0ff; --c-miss: #ff8a00; --c-none: #9aa3b0; --c-igl: #ffd60a; --c-cut: #ff3cc8;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; } h3 { font-size: 18px; }
+p { margin: 0; max-width: 80ch; }
+.lede { color: var(--fg2); }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.muted { color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.findings { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; max-width: 84ch; }
+.findings li::marker { color: var(--accent); font-weight: 600; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12px; }
+td a { color: var(--accent); }
+.tag { font: 500 11px var(--mono); padding: 1px 6px; border-radius: 8px; background: var(--chip); color: var(--fg2); }
+.tag.cko { background: #ff961e; color: #1a0d00; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.ctl { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--fg2); }
+.seg { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.seg button, .pick { font: 13px var(--text); padding: 4px 11px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 30px; }
+.seg button[aria-pressed="true"], .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled, textarea:disabled { opacity: 0.5; cursor: default; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--fg2); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; vertical-align: -2px; }
+.legend i.line { height: 4px; vertical-align: 3px; }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.sec header { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.view { background: var(--plate); border-radius: 4px; overflow: auto; max-height: 86vh; }
+.view canvas { display: block; image-rendering: auto; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--fg2); }
+.stats b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+.answer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+textarea { flex: 1 1 280px; box-sizing: border-box; min-height: 34px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>EGL repair from the IGL</h1>
+  <p class="lede">Fifth version, after your fourth round of notes. The IGL decides where cortex is; the stains decide where the EGL is: bright nuclei with low NeuN is EGL, high NeuN is IGL. Fissures are cut down the middle of the fused EGL and continued towards the furrow base; EGL is filled in from the stain, or bridged across short gaps, wherever IGL lies below; EGL and IGL labels the stains contradict are swapped. Every column from the line must read EGL, ML, IGL, white matter in that order. New here: p27 and NeuN tell arachnoid and pia (no p27, no NeuN) from the EGL (more p27 than the ML).</p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+
+<section class="card">
+  <h2>What changed since your notes</h2>
+  <ol class="findings" id="findings"></ol>
+</section>
+
+<section class="card">
+  <h2>Every section</h2>
+  <p class="muted">Lengths along the reference line. &ldquo;EGL labelled&rdquo;: an EGL label at least 12 µm thick under the line. &ldquo;Filled&rdquo;: label missing or thin, IGL below, the nuclei stain shows the EGL band. &ldquo;Bridged&rdquo;: a gap of up to 300 µm with IGL below, filled from the EGL thickness on either side. &ldquo;Left open&rdquo;: neither. Swaps are areas whose label changed because the stains contradict it.</p>
+  <div class="tbl"><table id="tab"></table></div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+  <div class="bar">
+    <h2 style="margin-right:auto">Sections</h2>
+    <span class="ctl">Show <span class="seg" role="group" aria-label="Show" id="show"></span></span>
+    <span class="ctl">Zoom <span class="seg" role="group" aria-label="Zoom" id="zoom"></span></span>
+  </div>
+  <div class="legend">
+    <span><i style="background:rgba(255,214,10,0.65)"></i>IGL</span>
+    <span><i style="background:rgba(59,224,255,0.5)"></i>EGL</span>
+    <span><i style="background:rgba(60,230,90,0.85)"></i>EGL added (filled or bridged)</span>
+    <span><i style="background:#ff4fa0"></i>IGL → EGL, incl. IGL above the ML (outline)</span>
+    <span><i style="background:#ffffff;border:1px solid #888"></i>EGL → IGL (outline)</span>
+    <span><i style="background:#cd783c"></i>IGL → ML, incl. IGL over the ML (outline)</span>
+    <span><i class="line" style="background:var(--c-egl)"></i>line: EGL labelled</span>
+    <span><i class="line" style="background:#3ce65a"></i>line: filled from the stain</span>
+    <span><i class="line" style="background:#b4f5c0"></i>line: bridged</span>
+    <span><i class="line" style="background:var(--c-miss)"></i>line: left open</span>
+    <span><i class="line" style="background:var(--c-none)"></i>line: no IGL below</span>
+    <span><i class="line" style="background:var(--c-cut)"></i>fissure cut</span>
+    <span><i class="line" style="background:#aa78ff"></i>old cut (optional)</span>
+  </div>
+  <p class="muted">Image: the nuclei stain at 2 µm per pixel. The reference line runs along the tissue edge and, where a fissure is closed, down the new cut and back up.</p>
+  <div id="secs" style="display:flex;flex-direction:column;gap:14px"></div>
+</section>
+</div>
+<script>
+const DATA = __DATA__;
+const state = {}, chains = {}, cache = {};
+let db = null;
+const view = { egl: true, add: true, swaps: true, old: false, cols: false, cut: true, zoom: 1 };
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("err", !!err); }
+const mm = (um) => (um / 1000).toFixed(1);
+const pc = (a, b) => Math.round(a / Math.max(b, 1) * 100) + "%";
+const VERDICTS = [["right", "Looks right now"], ["places", "Problems in places"], ["wrong", "Wrong"]];
+for (const t of DATA.findings || []) { const li = h("li", {}, $("findings")); li.innerHTML = t; }
+
+(function table() {
+  const T = $("tab"), tr0 = h("tr", {}, h("thead", {}, T));
+  for (const c of ["Section", "", "Reference line", "EGL labelled", "Filled", "Bridged", "Left open", "IGL → EGL", "EGL → IGL", "IGL → ML", "EGL added", "Your last check"]) h("th", {}, tr0, c);
+  const tb = h("tbody", {}, T);
+  const k = (v) => (v / 1000).toFixed(1) + "k µm²";
+  for (const s of DATA.sections) {
+    const st = s.stats, tr = h("tr", {}, tb);
+    const a = h("a", { href: "#" + s.short }, h("td", {}, tr), s.short + (s.short === "s1_2" ? " (gold)" : ""));
+    a.addEventListener("click", (e) => { e.preventDefault(); $("s-" + s.short).scrollIntoView({ behavior: "smooth", block: "start" }); });
+    const tg = h("td", {}, tr); h("span", { class: "tag" + (s.group === "cKO" ? " cko" : "") }, tg, s.group);
+    h("td", { class: "num" }, tr, mm(st.length_um) + " mm");
+    for (const f of ["labelled_um", "filled_um", "bridged_um", "left_um"]) h("td", { class: "num" }, tr, mm(st[f]) + " mm");
+    for (const f of ["igl_to_egl", "egl_to_igl", "igl_to_ml"]) h("td", { class: "num" }, tr, k(st.swaps_um2[f]));
+    h("td", { class: "num" }, tr, k(st.egl_added_um2));
+    h("td", {}, tr, st.verdict_v1 === "right" ? "looked right" : st.verdict_v1 === "places" ? "problems in places" : st.verdict_v1 === "wrong" ? "wrong" : "–");
+  }
+})();
+
+(function controls() {
+  const g = $("show");
+  for (const [k, t] of [["add", "EGL added"], ["swaps", "Swaps"], ["egl", "EGL"], ["cut", "Cuts"], ["old", "Old cuts"], ["cols", "Columns"]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(view[k]) }, g, t);
+    b.addEventListener("click", () => { view[k] = !view[k]; b.setAttribute("aria-pressed", String(view[k])); drawAll(); });
+  }
+  const z = $("zoom");
+  for (const [v, t] of [[1, "Fit"], [2, "2×"], [3, "3×"]]) {
+    const b = h("button", { type: "button", "data-v": String(v), "aria-pressed": String(view.zoom === v) }, z, t);
+    b.addEventListener("click", () => { view.zoom = v; z.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === String(v)))); drawAll(); });
+  }
+})();
+
+function img(src) { return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("could not load " + src)); im.src = src; }); }
+async function load(s) {
+  if (cache[s.short]) return cache[s.short];
+  const d = await (await fetch(s.data)).json();
+  const [base, igl, egl, cut, add, old, i2e, e2i, i2m] = await Promise.all(["base", "igl", "egl", "cut", "add", "old", "i2e", "e2i", "i2m"].map((k) => img(d.files[k])));
+  return (cache[s.short] = { d, base, igl, egl, cut, add, old, i2e, e2i, i2m });
+}
+const COL = ["#3be0ff", "#3ce65a", "#b4f5c0", "#ff8a00", "#9aa3b0"];
+function draw(id) {
+  const C = cache[id]; if (!C) return; const d = C.d, cv = $("cv-" + id), host = $("vw-" + id);
+  const H = d.base[0], W = d.base[1];
+  if (cv.width !== W) { cv.width = W; cv.height = H; }
+  const fitW = Math.max(200, host.clientWidth || 900);
+  const cssW = view.zoom === 1 ? Math.min(fitW, W * 1.5) : W * (view.zoom - 1);
+  cv.style.width = cssW + "px"; cv.style.height = (cssW * H / W) + "px";
+  const x = cv.getContext("2d");
+  x.drawImage(C.base, 0, 0);
+  x.imageSmoothingEnabled = false;
+  const gw = d.grid[1] * 2, gh = d.grid[0] * 2;
+  if (view.egl) x.drawImage(C.egl, -1, -1, gw, gh);
+  if (view.add) x.drawImage(C.add, -1, -1, gw, gh);
+  x.drawImage(C.igl, -1, -1, gw, gh);
+  if (view.swaps) for (const k of ["i2e", "e2i", "i2m"]) x.drawImage(C[k], -1, -1, gw, gh);
+  if (view.old) x.drawImage(C.old, -1, -1, gw, gh);
+  if (view.cut) x.drawImage(C.cut, -1, -1, gw, gh);
+  x.imageSmoothingEnabled = true;
+  const lw = Math.max(2.2, W / 420);
+  if (view.cols) {
+    x.lineWidth = Math.max(0.8, lw / 3); x.strokeStyle = "rgba(255,255,255,0.75)";
+    for (const c of d.cols) { x.beginPath(); for (let k = 0; k < c.length / 2; k++) { const X = c[2 * k + 1] / 2, Y = c[2 * k] / 2; if (k) x.lineTo(X, Y); else x.moveTo(X, Y); } x.stroke(); }
+  }
+  const L = d.line, n = L.length / 4;
+  let k = 0;
+  while (k < n - 1) {
+    const cl = L[4 * k + 2], pc0 = L[4 * k + 3];
+    x.beginPath(); x.moveTo(L[4 * k + 1] / 2, L[4 * k] / 2);
+    let j = k + 1;
+    while (j < n && L[4 * j + 3] === pc0) { x.lineTo(L[4 * j + 1] / 2, L[4 * j] / 2); if (L[4 * j + 2] !== cl) break; j++; }
+    x.lineWidth = lw + 2; x.strokeStyle = "rgba(0,0,0,0.7)"; x.stroke();
+    x.lineWidth = lw; x.strokeStyle = COL[cl]; x.stroke();
+    k = j;
+  }
+  // millimetre marks along the line
+  x.font = Math.round(Math.max(12, W / 75)) + "px IBM Plex Mono, monospace";
+  const per = 1000 / (2 * d.line_step);
+  for (let m = 1; m * per < n; m++) {
+    const q = Math.round(m * per), X = L[4 * q + 1] / 2, Y = L[4 * q] / 2;
+    x.fillStyle = "#fff"; x.beginPath(); x.arc(X, Y, lw * 1.3, 0, Math.PI * 2); x.fill();
+    x.lineWidth = 3; x.strokeStyle = "#000"; x.strokeText(String(m), X + 5, Y - 5); x.fillStyle = "#fff"; x.fillText(String(m), X + 5, Y - 5);
+  }
+}
+function drawAll() { for (const id in cache) draw(id); }
+
+for (const s of DATA.sections) {
+  const st = s.stats, c = h("article", { class: "sec", id: "s-" + s.short }, $("secs"));
+  const hd = h("header", {}, c); h("h3", {}, hd, s.short + (s.short === "s1_2" ? " (gold standard)" : ""));
+  h("span", { class: "tag" + (s.group === "cKO" ? " cko" : "") }, hd, s.group);
+  const sp = h("div", { class: "stats" }, c);
+  const add = (k, v) => { const e = h("span", {}, sp, k + " "); h("b", {}, e, v); };
+  add("reference line", mm(st.length_um) + " mm"); add("EGL labelled", pc(st.labelled_um, st.length_um));
+  add("filled", mm(st.filled_um) + " mm"); add("bridged", mm(st.bridged_um) + " mm"); add("left open", mm(st.left_um) + " mm");
+  add("EGL added", Math.round(st.egl_added_um2).toLocaleString() + " µm²");
+  if (st.note_v1) { const p = h("p", { class: "muted" }, c); h("b", {}, p, "Your note on the last version: "); p.appendChild(document.createTextNode(st.note_v1)); }
+  const vw = h("div", { class: "view", id: "vw-" + s.short }, c);
+  h("canvas", { id: "cv-" + s.short, "aria-label": "Section " + s.short + " with the IGL and the reference line" }, vw);
+  h("p", { class: "muted", id: "msg-" + s.short }, c, "Loading…");
+  const ans = h("div", { class: "answer" }, c);
+  for (const [v, t] of VERDICTS) {
+    const b = h("button", { type: "button", class: "pick", "data-v": v, "aria-pressed": "false" }, ans, t); b.disabled = true;
+    b.addEventListener("click", () => { const cur = get(s.short); cur.verdict = cur.verdict === v ? null : v; save(s.short, cur); });
+  }
+  const ta = h("textarea", { id: "note-" + s.short, placeholder: "Notes: where the added EGL, a cut or the line is wrong", "aria-label": "Notes for " + s.short }, ans); ta.disabled = true;
+  ta.addEventListener("change", () => { const cur = get(s.short); cur.note = ta.value.trim(); save(s.short, cur); });
+}
+const queue = DATA.sections.slice();
+(async function loadAll() {
+  for (const s of queue) {
+    try { await load(s); $("msg-" + s.short).textContent = "Mm marks along the line count from where it starts."; draw(s.short); }
+    catch (e) { $("msg-" + s.short).textContent = "This section could not be loaded (" + e.message + ")."; }
+  }
+})();
+let rT = null; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(drawAll, 200); });
+
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+function paint(id) {
+  const c = $("s-" + id); if (!c) return; const cur = state[id] || {};
+  c.querySelectorAll(".answer button.pick").forEach((b) => b.setAttribute("aria-pressed", String(cur.verdict === b.dataset.v)));
+  const ta = $("note-" + id); if (ta && document.activeElement !== ta) ta.value = cur.note || "";
+}
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString(); state[id] = cur; paint(id); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc(DATA.collection + "/" + id).set(cur)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus("Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to mark the sections.", true); return; }
+  document.querySelectorAll(".answer button.pick, .answer textarea").forEach((b) => { b.disabled = false; });
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection(DATA.collection).onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Answers load and save automatically"); }
+    DATA.sections.forEach((s) => paint(s.short));
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

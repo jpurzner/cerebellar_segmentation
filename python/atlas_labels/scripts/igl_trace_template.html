@@ -1,0 +1,269 @@
+<title>IGL Trace</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: a microscope-style workspace — the section image fills the left, tools and the stroke list sit in a narrow column on the right; same family as IGL Gap Fill */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --plate: #0b0e12;
+  --add: #ff2fd6; --wrong: #ff9a1f; --area: #9be15d; --igl: #3be0ff;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 24px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(26px, 3.6vw, 36px); line-height: 1.1; }
+h2 { font-size: 18px; }
+p { margin: 0; max-width: 78ch; }
+.lede { color: var(--fg2); }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.muted { color: var(--muted); font-size: 13px; }
+.how { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--fg2); margin: 0; padding: 0; list-style: none; }
+.how b { color: var(--fg); font-weight: 500; }
+.how i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: 4px; margin-right: 6px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.seg { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.seg button, .btn { font: 13px var(--text); padding: 4px 11px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 32px; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.seg.mode button[data-v="add"][aria-pressed="true"] { background: var(--add); border-color: var(--add); color: #1a0016; }
+.seg.mode button[data-v="wrong"][aria-pressed="true"] { background: var(--wrong); border-color: var(--wrong); color: #1a0d00; }
+.seg.mode button[data-v="area"][aria-pressed="true"] { background: var(--area); border-color: var(--area); color: #0d1a05; }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled { opacity: 0.5; cursor: default; }
+.lab { font: 500 11px var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.ws { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .ws { grid-template-columns: minmax(0, 1fr); } }
+.view { background: var(--plate); border-radius: 6px; overflow: auto; max-height: 80vh; border: 1px solid var(--line); }
+.stage { position: relative; cursor: crosshair; }
+.stage img { display: block; width: 100%; height: auto; image-rendering: auto; user-select: none; -webkit-user-drag: none; }
+.stage .ov, .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; margin: 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.strokes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; max-height: 260px; overflow: auto; }
+.strokes li { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.strokes .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.strokes .x { font: 12px var(--mono); padding: 1px 7px; min-height: 24px; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+textarea { box-sizing: border-box; width: 100%; min-height: 64px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+.state { display: flex; flex-direction: column; gap: 5px; }
+.state button { text-align: left; }
+.state button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.scale { font: 11px var(--mono); color: var(--muted); }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>IGL Trace</h1>
+  <p class="lede" id="lede"></p>
+  <p class="status" id="status" role="status">Connecting to saved traces…</p>
+</header>
+
+<ul class="how" aria-label="How to use">
+  <li><i style="background:var(--add)"></i><b>Trace missing IGL:</b> click along the middle of a stretch of IGL, in order, where it is missing or mislabelled; it is painted as a ribbon of the section's IGL width. Start a new stroke for each separate stretch.</li>
+  <li><i style="background:var(--area)"></i><b>Outline missing IGL area:</b> click around the edge of a region that should all be IGL; everything inside the outline is filled.</li>
+  <li><i style="background:var(--wrong)"></i><b>Mark wrong IGL:</b> click along IGL labels that are not IGL, and say in the notes what they are.</li>
+  <li><i style="background:var(--igl)"></i><b>Cyan outline:</b> the current IGL labels; white rings: where the ribbon ends.</li>
+  <li><b>EZH2 cKO sections:</b> mark only labelling errors. Where the IGL is genuinely diffuse, thin or broken, outline or trace it as it really is, not as a control would look.</li>
+</ul>
+
+<div class="bar">
+  <div class="seg" role="group" aria-label="Section" id="tabs"></div>
+  <div class="seg" role="group" aria-label="Image" id="layers"></div>
+  <label style="font-size:13px;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" id="showigl" checked> IGL outline</label>
+  <div class="seg" role="group" aria-label="Zoom" id="zoom"></div>
+</div>
+
+<div class="ws">
+  <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+    <div class="view" id="view"><div class="stage" id="stage">
+      <img id="base" alt="">
+      <img class="ov" id="ov" alt="">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
+    </div></div>
+    <span class="scale" id="scale"></span>
+  </div>
+  <aside class="side">
+    <section class="panel">
+      <span class="lab">Tool</span>
+      <div class="seg mode" role="group" aria-label="Tool" id="mode"></div>
+      <div class="btns">
+        <button type="button" class="btn" id="newstroke">New stroke</button>
+        <button type="button" class="btn" id="undo">Undo last point</button>
+      </div>
+      <p class="muted" id="hint"></p>
+    </section>
+    <section class="panel">
+      <span class="lab">Your strokes</span>
+      <ul class="strokes" id="strokes"></ul>
+    </section>
+    <section class="panel" id="resultpanel" hidden>
+      <span class="lab">Painted result</span>
+      <p class="muted" id="resulttext"></p>
+      <div class="state" role="group" aria-label="Painted result" id="result"></div>
+    </section>
+    <section class="panel">
+      <span class="lab">This section</span>
+      <div class="state" role="group" aria-label="Section status" id="state"></div>
+      <textarea id="note" placeholder="Notes: what is wrong where, what a wrong IGL label really is"></textarea>
+    </section>
+    <section class="panel">
+      <span class="lab">About it</span>
+      <dl class="facts" id="facts"></dl>
+    </section>
+  </aside>
+</div>
+</div>
+<script>
+const DATA = __DATA__;
+const saved = {}, chains = {};
+let db = null, cur = DATA.sections[0].short, layer = "nuc", zoom = 1, mode = "add", startNew = true;
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("err", !!err); }
+const sec = () => DATA.sections.find((s) => s.short === cur);
+const docOf = (k) => JSON.parse(JSON.stringify(saved[k] || { strokes: [], note: "", status: null }));
+const SVGNS = "http://www.w3.org/2000/svg";
+
+$("lede").textContent = "The 7 EZH2 cKO sections are added (tabs marked cKO); s5_B and s5_E are done. In the cKO sections, fix what the labels got wrong and keep what the knockout changed. " +
+  "Images are in the label grid's frame, not rotated to the atlas, at exactly 2 µm per pixel.";
+
+function seg(el, items, get, set) {
+  el.textContent = "";
+  for (const [v, lab] of items) {
+    const b = h("button", { type: "button", "aria-pressed": String(String(get()) === String(v)) }, el, lab);
+    b.dataset.v = v;
+    b.addEventListener("click", () => { set(v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === String(v)))); });
+  }
+}
+seg($("tabs"), DATA.sections.map((s) => [s.short, s.short + (s.group === "cKO" ? " · cKO" : "")]), () => cur, (v) => { cur = v; startNew = true; layerSeg(); render(); });
+function layerSeg() {
+  const items = [["nuc", "Nuclei"], ["neun", "NeuN"], ["labels", "Labels"]];
+  if (sec().layers.result) items.push(["result", "Result (painted IGL in cyan)"]);
+  if (!sec().layers[layer]) layer = "nuc";
+  seg($("layers"), items, () => layer, (v) => { layer = v; render(); });
+}
+layerSeg();
+seg($("zoom"), [[1, "1×"], [2, "2×"], [3, "3×"]], () => zoom, (v) => { zoom = +v; render(); });
+seg($("mode"), [["add", "Trace missing IGL"], ["area", "Outline missing IGL area"], ["wrong", "Mark wrong IGL"]], () => mode, (v) => { mode = v; startNew = true; render(); });
+$("showigl").addEventListener("change", render);
+$("newstroke").addEventListener("click", () => { startNew = true; render(); });
+$("undo").addEventListener("click", () => {
+  const d = docOf(cur); const s = d.strokes[d.strokes.length - 1]; if (!s) return;
+  s.pts.pop(); if (!s.pts.length) { d.strokes.pop(); startNew = true; }
+  save(cur, d);
+});
+$("note").addEventListener("change", () => { const d = docOf(cur); d.note = $("note").value.trim(); save(cur, d); });
+
+$("stage").addEventListener("click", (ev) => {
+  if (!db) { setStatus("Clicks can't be saved in this view. Open the page on claude.ai to trace.", true); return; }
+  const r = $("base").getBoundingClientRect();
+  const fx = (ev.clientX - r.left) / r.width, fy = (ev.clientY - r.top) / r.height;
+  if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return;
+  const d = docOf(cur);
+  const last = d.strokes[d.strokes.length - 1];
+  if (startNew || !last || last.kind !== mode) { d.strokes.push({ kind: mode, pts: [] }); startNew = false; }
+  d.strokes[d.strokes.length - 1].pts.push([+fx.toFixed(5), +fy.toFixed(5)]);
+  save(cur, d);
+});
+
+function lengthUm(s, S) { let L = 0; for (let i = 1; i < s.pts.length; i++) { const dx = (s.pts[i][0] - s.pts[i - 1][0]) * S.grid[1], dy = (s.pts[i][1] - s.pts[i - 1][1]) * S.grid[0]; L += Math.hypot(dx, dy) * 4; } return Math.round(L); }
+
+function render() {
+  const S = sec(), d = saved[cur] || { strokes: [], note: "", status: null };
+  $("base").src = S.layers[layer];
+  $("base").alt = S.short + ": " + ({ nuc: "nuclei", neun: "NeuN", labels: "labels", result: "painted result" })[layer] + " of the whole section";
+  $("ov").src = S.overlay; $("ov").hidden = !$("showigl").checked;
+  $("stage").style.width = (zoom * 100) + "%";
+  $("scale").textContent = S.short + " · " + S.w_um.toLocaleString() + " × " + S.h_um.toLocaleString() + " µm · image at 2 µm per pixel · " + zoom + "× zoom";
+  const svg = $("svg"); svg.setAttribute("viewBox", "0 0 " + S.grid[1] + " " + S.grid[0]); svg.textContent = "";
+  d.strokes.forEach((s, i) => {
+    const col = s.kind === "add" ? "#ff2fd6" : s.kind === "area" ? "#9be15d" : "#ff9a1f";
+    const pl = document.createElementNS(SVGNS, s.kind === "area" ? "polygon" : "polyline");
+    pl.setAttribute("points", s.pts.map((p) => (p[0] * S.grid[1]).toFixed(2) + "," + (p[1] * S.grid[0]).toFixed(2)).join(" "));
+    pl.setAttribute("fill", s.kind === "area" ? "rgba(155,225,93,0.18)" : "none"); pl.setAttribute("stroke", col); pl.setAttribute("stroke-width", "2.5"); pl.setAttribute("vector-effect", "non-scaling-stroke");
+    svg.appendChild(pl);
+    s.pts.forEach((p, j) => {
+      const c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("cx", p[0] * S.grid[1]); c.setAttribute("cy", p[1] * S.grid[0]); c.setAttribute("r", j === 0 ? 3.2 : 2.2);
+      c.setAttribute("fill", col); c.setAttribute("stroke", "#fff"); c.setAttribute("stroke-width", "1"); c.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(c);
+    });
+    if (s.pts.length) {
+      const t = document.createElementNS(SVGNS, "text");
+      t.setAttribute("x", s.pts[0][0] * S.grid[1] + 5); t.setAttribute("y", s.pts[0][1] * S.grid[0] - 5);
+      t.setAttribute("fill", "#fff"); t.setAttribute("font-size", "12"); t.setAttribute("font-family", "IBM Plex Mono, monospace"); t.setAttribute("stroke", "#000"); t.setAttribute("stroke-width", "0.6");
+      t.textContent = String(i + 1); svg.appendChild(t);
+    }
+  });
+  const ul = $("strokes"); ul.textContent = "";
+  if (!d.strokes.length) h("li", { class: "muted" }, ul, "No strokes yet. Click on the image to start one.");
+  d.strokes.forEach((s, i) => {
+    const li = h("li", {}, ul);
+    const sp = h("span", {}, li);
+    const sw = h("span", { class: "sw" }, sp); sw.style.background = s.kind === "add" ? "var(--add)" : s.kind === "area" ? "var(--area)" : "var(--wrong)";
+    sp.append((i + 1) + " · " + ({ add: "missing IGL", area: "missing IGL area", wrong: "wrong IGL" })[s.kind] + " · " + s.pts.length + " point" + (s.pts.length === 1 ? "" : "s") + " · " + lengthUm(s, S) + " µm");
+    const x = h("button", { type: "button", class: "btn x", "aria-label": "Delete stroke " + (i + 1) }, li, "Delete");
+    x.disabled = !db;
+    x.addEventListener("click", () => { const dd = docOf(cur); dd.strokes.splice(i, 1); startNew = true; save(cur, dd); });
+  });
+  $("hint").textContent = startNew ? "The next click starts a new " + ({ add: "missing-IGL", area: "missing-IGL-area outline", wrong: "wrong-IGL" })[mode] + " stroke." : "Clicks extend stroke " + d.strokes.length + ".";
+  const st = $("state"); st.textContent = "";
+  for (const [v, lab] of [["done", "Done: I traced everything I see"], ["nothing", "Nothing to fix here"], ["partial", "Not finished yet"]]) {
+    const b = h("button", { type: "button", class: "btn", "aria-pressed": String(d.status === v) }, st, lab);
+    b.disabled = !db;
+    b.addEventListener("click", () => { const dd = docOf(cur); dd.status = dd.status === v ? null : v; save(cur, dd); });
+  }
+  $("resultpanel").hidden = !S.result_text;
+  if (S.result_text) {
+    $("resulttext").textContent = S.result_text + " Switch the image to \u201cResult\u201d to see it; the cyan outline still shows the labels before.";
+    const rs = $("result"); rs.textContent = "";
+    for (const [v, lab] of [["right", "Painted right"], ["more", "Needs changes: I traced more"], ["wrong", "Wrong"]]) {
+      const b = h("button", { type: "button", class: "btn", "aria-pressed": String(d.result === v) }, rs, lab);
+      b.disabled = !db;
+      b.addEventListener("click", () => { const dd = docOf(cur); dd.result = dd.result === v ? null : v; save(cur, dd); });
+    }
+  }
+  if (document.activeElement !== $("note")) $("note").value = d.note || "";
+  $("note").disabled = !db;
+  const f = $("facts"); f.textContent = "";
+  const facts = [["Genotype", S.group === "cKO" ? "EZH2 cKO" : S.group], ["Imaged at", S.mag], ["Section", S.w_um.toLocaleString() + " × " + S.h_um.toLocaleString() + " µm"],
+                 ["IGL labelled", S.igl_mm2 + " mm²"], ["Ribbon ends", S.n_ends]];
+  if (S.judged && S.judged.length) facts.push(["Bridges you judged", S.judged.join("; ")]);
+  for (const [k, v] of facts) {
+    h("dt", {}, f, k); h("dd", {}, f, String(v));
+  }
+}
+function save(k, d) {
+  d.updatedAt = new Date().toISOString(); saved[k] = d; render(); setStatus("Saving…");
+  chains[k] = (chains[k] || Promise.resolve()).then(() => db.doc("igl_trace/" + k).set(d)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus(e && e.code === "invalid_argument" ? "You can view this page but not save traces." : "Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+render();
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Traces can't be saved in this view. Open the page on claude.ai to trace.", true); render(); return; }
+  render();
+  const timer = setTimeout(() => setStatus("Can't reach saved traces yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection("igl_trace").onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) saved[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Traces load and save automatically"); }
+    render();
+  }, (e) => { clearTimeout(timer); setStatus("Saved traces can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

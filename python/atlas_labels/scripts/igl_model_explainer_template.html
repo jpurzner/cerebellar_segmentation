@@ -1,0 +1,539 @@
+<title>IGL Ribbon Model</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* layout: one reading column of prose with wide figure plates; the same type and neutrals as the IGL Problem Check page */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff;
+  --map-ground: #ffffff; --map-tissue: #e4e8ed; --map-egl: #b6c3d3; --map-igl: #dccb94; --map-igl-strong: #b89a45; --map-wm: #cbbfb4;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s7: #6250d6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520;
+  --map-ground: #0e1217; --map-tissue: #262c35; --map-egl: #3a4758; --map-igl: #5d5233; --map-igl-strong: #9c8549; --map-wm: #423a33;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520;
+  --map-ground: #0e1217; --map-tissue: #262c35; --map-egl: #3a4758; --map-igl: #5d5233; --map-igl-strong: #9c8549; --map-wm: #423a33;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s7: #9085e9; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 44px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(30px, 5vw, 44px); }
+h2 { font-size: 26px; }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 68ch; }
+.prose { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lede { font-size: 18px; color: var(--fg2); }
+section { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.plate { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.two { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+svg.map { display: block; width: 100%; height: auto; border-radius: 4px; background: var(--map-ground); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--fg2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.ln { display: inline-block; width: 22px; height: 0; border-top: 3px solid; }
+.ln.dash { border-top-style: dashed; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button, .seg button { font: 13px var(--text); padding: 5px 11px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; gap: 7px; }
+.chips button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.chips button:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chips button .ln { width: 16px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.ctl label { font-size: 13px; color: var(--fg2); margin-right: 8px; }
+.readout { font: 13px var(--mono); color: var(--fg2); min-height: 1.5em; font-variant-numeric: tabular-nums; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+.eq { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; overflow-x: auto; display: flex; flex-direction: column; gap: 10px; }
+.eq .m { font-size: 1.08em; }
+.eq .m.fallback { font: 13px var(--mono); white-space: pre-wrap; color: var(--fg2); }
+.eq .note { font-size: 14px; color: var(--fg2); max-width: 70ch; }
+math { font-family: "STIX Two Math", "Cambria Math", "Latin Modern Math", math; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.term { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; font-size: 14px; color: var(--fg2); }
+.term b { color: var(--fg); font-weight: 500; display: block; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tabs button { font: 500 13px var(--text); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); cursor: pointer; min-height: 34px; }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font: 13px var(--mono); color: var(--fg2); }
+.bars { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.bar { display: grid; grid-template-columns: 9em minmax(0, 1fr) 5em; gap: 8px; align-items: center; }
+.bar .track { height: 12px; background: var(--chip); border-radius: 2px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--s1); border-radius: 0 4px 4px 0; }
+.bar .v { font: 13px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; }
+.chart text { fill: var(--fg2); font: 12px var(--text); }
+.chart .axis { stroke: var(--line); }
+.chart .grid line { stroke: var(--line); stroke-dasharray: 2 4; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px;
+  font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,0.12); min-width: 170px; z-index: 3; }
+.tip div { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.tip b { font-weight: 500; }
+.small { font-size: 13px; color: var(--muted); }
+canvas, svg { max-width: 100%; }
+@media (prefers-reduced-motion: no-preference) { .fade { transition: opacity 0.2s; } }
+</style>
+
+<div class="wrap">
+<header class="prose">
+  <div class="eyebrow">P7 cerebellum · IGL repair</div>
+  <h1>IGL Ribbon Model</h1>
+  <p class="lede">The internal granular layer is drawn as a ribbon: a smooth centre line that carries a width and sits at its own depth below the EGL. A missing stretch is predicted as the curve that bends least while staying at that depth, joined to both sides with matching directions. Everything below is drawn from your sections.</p>
+</header>
+
+<section id="measure">
+  <div class="prose">
+    <h2>How a ribbon is described</h2>
+    <p>The IGL label is cleaned and skeletonised on a 4 µm grid. Each skeleton branch becomes a centre line γ(s), where s is distance along the ribbon in µm. Three quantities are read along it: the curvature κ(s), how fast the direction turns; the width w(s), twice the distance from the centre line to the IGL edge; and the depth d(s), the distance from the centre line to the nearest EGL. Hover over the profiles to find a point on the ribbon.</p>
+  </div>
+  <div class="plate">
+    <div class="two">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <svg class="map" id="ribbon-map" role="img" aria-label="Label map of an s5_G folium with the IGL centre line coloured by curvature"></svg>
+        <div class="legend" id="ribbon-legend"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div class="readout" id="ribbon-readout">Hover over a profile</div>
+        <div class="chart" id="prof-k"></div>
+        <div class="chart" id="prof-w"></div>
+        <div class="chart" id="prof-d"></div>
+      </div>
+    </div>
+  </div>
+  <div class="prose"><p>Measured on the five controls with intact IGL (only branches longer than 600 µm):</p></div>
+  <div class="plate tbl"><table id="stats"></table></div>
+  <div class="prose"><p class="small">Correlation length is how far along the ribbon a value stays predictable: the distance at which the correlation of a quantity with itself falls to 1/e. Width and depth change over about 50 µm. Curvature decorrelates in 12 µm, which is three grid pixels, so part of that is pixel noise in the skeleton; the large-scale bends of the folia are carried by the depth term below.</p></div>
+</section>
+
+<section id="equations">
+  <div class="prose">
+    <h2>The equations</h2>
+    <p>A gap has two flank ends, a and b. From the last 200 µm of IGL on each side the model takes the end position, the direction the ribbon is heading over its last 60 µm (t<sub>a</sub>, t<sub>b</sub>), and the median width and depth 40–200 µm behind the end (w<sub>a</sub>, w<sub>b</sub>, d<sub>a</sub>, d<sub>b</sub>). The predicted centre line is the curve that minimises an energy:</p>
+  </div>
+  <div class="eq">
+    <div class="m" data-tex="E[\gamma] = \underbrace{\frac{1}{2\beta q}\int_0^L \kappa(s)^2\,ds}_{\text{bending}} \;+\; \underbrace{\frac{1}{2\sigma_d^2\,\ell_d}\int_0^L \big(d(\gamma(s)) - \hat d(s)\big)^2\,ds}_{\text{depth}} \;+\; \underbrace{\lambda_b \sum_i \max\!\big(0,\; m - \delta(\gamma_i)\big)^2}_{\text{barrier}} \;+\; \underbrace{\lambda_s \sum_i \frac{\big(|\gamma_{i+1}-\gamma_i| - h\big)^2}{h^2}}_{\text{even spacing}}"></div>
+    <div class="m" data-tex="\gamma(0) = a,\quad \gamma(L) = b,\quad \gamma'(0) = t_a,\quad \gamma'(L) = t_b,\qquad \hat d(s) = d_a + (d_b - d_a)\,\frac{s}{L}"></div>
+  </div>
+  <div class="terms">
+    <div class="term"><b>Bending</b>Penalises turning. A straight bridge costs nothing; a sharp kink costs a lot. Divided by the curvature intensity of real ribbons, so turning as much as an intact ribbon does is cheap.</div>
+    <div class="term"><b>Depth</b>Keeps the curve at the ribbon's depth below the EGL, blended linearly from one end's depth to the other's. This is what makes a bridge follow the folium surface around a tip instead of cutting across it.</div>
+    <div class="term"><b>Barrier</b>Pushes the curve out of EGL, white matter and background, keeping at least m = 8 µm away. Inside regions you confirmed as bleached, white matter is not a barrier, because bleach is often labelled white matter.</div>
+    <div class="term"><b>Even spacing</b>Keeps the points along the curve evenly spaced so that the curvature estimate stays honest. It does not change the shape.</div>
+  </div>
+  <div class="prose">
+    <h3>Why these terms</h3>
+    <p>Read as a probability, p(γ | flanks) ∝ e<sup>−E[γ]</sup>. The bending term is what you get if the curvature were random noise of intensity q, which makes the heading drift like a random walk; the depth term says the true depth wanders around the blended value with a spread σ<sub>d</sub> and a correlation length ℓ<sub>d</sub>. So the minimum-energy curve is the most probable ribbon given what is on both sides. The curvature intensity comes straight from the measurements:</p>
+  </div>
+  <div class="eq">
+    <div class="m" data-tex="\langle \kappa(s)\,\kappa(s')\rangle = q\,\delta(s-s'),\qquad q = \sigma_\kappa^2\,\ell_\kappa \approx (0.012\ \mu\mathrm{m}^{-1})^2 \times 12\ \mu\mathrm{m} \approx 1.7\times 10^{-3}\ \mu\mathrm{m}^{-1}"></div>
+  </div>
+  <div class="prose">
+    <h3>Solving it</h3>
+    <p>The curve is a chain of points γ<sub>0</sub> … γ<sub>n</sub> about h = 8 µm apart, with γ<sub>0</sub> = a and γ<sub>n</sub> = b fixed. Two ghost points outside the ends hold the end directions. Curvature becomes a second difference, and the energy is minimised over the inner points with L-BFGS-B, using the exact gradient.</p>
+  </div>
+  <div class="eq">
+    <div class="m" data-tex="\kappa_i \approx \frac{|\gamma_{i+1} - 2\gamma_i + \gamma_{i-1}|}{h^2},\qquad \int_0^L \kappa^2\,ds \approx \sum_i \kappa_i^2\,h,\qquad \gamma_{-1} = a - h\,t_a,\quad \gamma_{n+1} = b + h\,t_b"></div>
+  </div>
+  <div class="prose">
+    <p>The minimisation starts from two different curves and keeps whichever ends with the lower energy. The first is the smooth cubic that leaves a along t<sub>a</sub> and arrives at b along t<sub>b</sub>. The second is the cheapest route at the ribbon's depth: a shortest path on the grid where each step costs more the further it strays from the mean end depth, and EGL, white matter and background cannot be crossed. The second start is what finds the way around a folium tip when the two ends of a gap face each other across a thin core of white matter.</p>
+  </div>
+  <div class="eq">
+    <div class="m" data-tex="\gamma_0^{\text{smooth}}(t) = (2t^3 - 3t^2 + 1)\,a + (t^3 - 2t^2 + t)\,D\,t_a + (-2t^3 + 3t^2)\,b + (t^3 - t^2)\,D\,t_b,\qquad D = |b - a|,\ \ 0 \le t \le 1"></div>
+    <div class="m" data-tex="\gamma_0^{\text{route}} = \arg\min_{\gamma}\int_\gamma \Big[\,1 + \Big(\frac{d(x) - \bar d}{\sigma_d}\Big)^2\Big]\,ds,\qquad \bar d = \tfrac{1}{2}(d_a + d_b)"></div>
+  </div>
+  <div class="prose">
+    <h3>From centre line to IGL</h3>
+    <p>The width is blended smoothly from one end to the other, and every pixel within half that width of the centre line becomes IGL, as long as it is ML, PCL, unassigned, a non-tear anomaly, or white matter inside a confirmed region. EGL is never painted.</p>
+  </div>
+  <div class="eq">
+    <div class="m" data-tex="w(t) = w_a + (w_b - w_a)\,(3t^2 - 2t^3),\qquad \text{IGL} \mathrel{\cup}= \big\{\,x : |x - \gamma(s^*)| \le \tfrac12 w(s^*)\,\big\},\quad s^* = \arg\min_s |x - \gamma(s)|"></div>
+  </div>
+  <div class="plate tbl"><table id="params"></table></div>
+</section>
+
+<section id="prior">
+  <div class="prose">
+    <h2>Ribbons drawn from the statistics alone</h2>
+    <p>Before any EGL or flank constrains it, the model's idea of an IGL ribbon is the one below: curvature, width and depth each wander with the spread and correlation length measured on your controls. The dotted line marks where the EGL would sit, d(s) above the centre line. These are random draws, not sections. They show why the bending term alone cannot place a long bridge: over 500 µm it allows ribbons to drift far, and it is the depth below the real EGL that pins the IGL in place.</p>
+  </div>
+  <div class="plate">
+    <div class="ctl">
+      <span><label for="prior-beta">Bending</label><span class="seg" id="prior-beta" role="group" aria-label="Bending stiffness"></span></span>
+      <span class="chips"><button type="button" id="prior-draw">Draw new ribbons</button></span>
+    </div>
+    <svg class="map" id="prior-svg" role="img" aria-label="Random IGL ribbons drawn from the measured statistics" style="background:var(--surface)"></svg>
+    <div class="legend"><span><i class="sw" style="background:var(--map-igl)"></i>IGL ribbon (width w)</span><span><i class="ln" style="border-color:var(--fg)"></i>centre line γ</span><span><i class="ln dash" style="border-color:var(--muted)"></i>EGL at depth d</span><span>scale bar 100 µm</span></div>
+  </div>
+</section>
+
+<section id="examples">
+  <div class="prose">
+    <h2>What the model fills in</h2>
+    <p>These are stretches cut out of intact IGL in your controls and predicted from what was left. The hatched area is the IGL that was removed; the model never saw it. Blue is the model's centre line and the IGL band it would paint; orange is the repair used for your last s4_A and s4_C fixes. All five are held-out gaps: the weights were tuned on other gaps.</p>
+  </div>
+  <div class="plate">
+    <div class="tabs" role="tablist" id="ex-tabs" aria-label="Example gaps"></div>
+    <div class="two">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <svg class="map" id="ex-map" role="img" aria-label="Example gap with the true IGL and the predictions"></svg>
+        <div class="chips" id="ex-chips" role="group" aria-label="Lines shown"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <h3 id="ex-title"></h3>
+        <div class="facts" id="ex-facts"></div>
+        <p id="ex-text" style="font-size:15px;color:var(--fg2)"></p>
+        <div class="tbl"><table id="ex-table"></table></div>
+        <div class="legend"><span><i class="sw" style="background:var(--map-egl)"></i>EGL</span><span><i class="sw" style="background:var(--map-tissue);outline:1px solid var(--line)"></i>ML and other</span><span><i class="sw" style="background:var(--map-igl)"></i>IGL</span><span><i class="sw" style="background:var(--map-wm)"></i>white matter</span><span><i class="sw" style="background:repeating-linear-gradient(45deg,var(--map-igl-strong) 0 2px,transparent 2px 5px);outline:1px dashed var(--fg2)"></i>removed IGL</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="weights">
+  <div class="prose">
+    <h2>Turning the weights</h2>
+    <p>The folium-tip gap again, solved with other weights. A small depth tolerance σ<sub>d</sub> holds the curve tightly to the blended depth; with the depth term off, only bending is left and the curve cuts the corner. The bending scale β sets how stiff the ribbon is: smaller β makes turning more expensive. The model uses σ<sub>d</sub> = 15 µm and β = 0.3, the setting with the lowest median error on the tuning gaps; on this particular gap a stiffer setting does even better.</p>
+  </div>
+  <div class="plate">
+    <div class="ctl">
+      <span><label>Depth tolerance σ<sub>d</sub></label><span class="seg" id="w-sigma" role="group" aria-label="Depth tolerance"></span></span>
+      <span><label>Bending scale β</label><span class="seg" id="w-bend" role="group" aria-label="Bending scale"></span></span>
+    </div>
+    <div class="two">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <svg class="map" id="w-map" role="img" aria-label="The folium-tip gap solved with the chosen weights"></svg>
+        <div class="chips" id="w-chips" role="group" aria-label="Starting curves shown"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div class="facts" id="w-facts"></div>
+        <div class="bars" id="w-bars"></div>
+        <p class="small" id="w-note"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="accuracy">
+  <div class="prose">
+    <h2>How well it predicts</h2>
+    <p>180 stretches of 50–500 µm were cut from the five controls, one at a time. Half were used to choose the weights; the 90 held out are scored here. A prediction counts as right when its centre line lies on average within 20 µm of the true one, about a third of the ribbon's width. When the old repair produces no bridge at all, it counts as wrong.</p>
+  </div>
+  <div class="plate">
+    <div class="chart" id="acc-chart"></div>
+    <div class="legend" id="acc-legend"></div>
+  </div>
+  <div class="plate tbl"><table id="acc-table"></table></div>
+  <div class="prose">
+    <p>Width is the weak part. The width blended between the two ends misses the true width by 19 µm on average, no better than a constant: width changes over about 50 µm of ribbon, so the ends say little about the middle of a long gap. The centre line, which is what decides whether the ribbon is continuous, is predicted well up to about 350 µm and usually up to 500 µm.</p>
+  </div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+const D = __DATA__;
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function isDark() { const t = document.documentElement.getAttribute("data-theme"); if (t) return t === "dark"; return window.matchMedia("(prefers-color-scheme: dark)").matches; }
+const SERIES = { model: ["var(--s1)", "Model"], old: ["var(--s2)", "Old repair"], hermite: ["var(--s3)", "Smooth curve only"], line: ["var(--s4)", "Straight line"], elastic: ["var(--s5)", "Model, smooth start only"] };
+const pts = (P) => P.map((p) => p[0] + "," + p[1]).join(" ");
+
+/* equations: KaTeX to native MathML; the TeX itself if the library did not load */
+document.querySelectorAll(".m[data-tex]").forEach((e) => {
+  const tex = e.getAttribute("data-tex");
+  try { if (!window.katex) throw 0; katex.render(tex, e, { displayMode: true, output: "mathml", throwOnError: false }); }
+  catch (_) { e.textContent = tex; e.classList.add("fallback"); }
+});
+
+/* ---------- label map drawing ---------- */
+function drawMap(svg, n, maps, hatchId) {
+  svg.textContent = "";
+  svg.setAttribute("viewBox", "0 0 " + n + " " + n);
+  const defs = el("defs", {}, svg);
+  if (hatchId) {
+    const pat = el("pattern", { id: hatchId, patternUnits: "userSpaceOnUse", width: 5, height: 5, patternTransform: "rotate(45)" }, defs);
+    el("rect", { width: 5, height: 5, style: "fill:var(--map-igl)" }, pat);
+    el("line", { x1: 0, y1: 0, x2: 0, y2: 5, style: "stroke:var(--map-igl-strong);stroke-width:2.4" }, pat);
+  }
+  el("rect", { x: 0, y: 0, width: n, height: n, style: "fill:var(--map-ground)" }, svg);
+  for (const [k, col] of [["tissue", "--map-tissue"], ["wm", "--map-wm"], ["igl", "--map-igl"], ["egl", "--map-egl"]])
+    if (maps[k]) el("path", { d: maps[k], "fill-rule": "evenodd", style: "fill:var(" + col + ")" }, svg);
+  if (maps.gap) el("path", { d: maps.gap, "fill-rule": "evenodd", style: "fill:url(#" + hatchId + ");stroke:var(--fg2);stroke-width:1.2;stroke-dasharray:4 3;vector-effect:non-scaling-stroke" }, svg);
+  const g = el("g", {}, svg);
+  // 100 um scale bar (2 um per map pixel)
+  const sb = el("g", {}, svg);
+  el("rect", { x: 10, y: n - 16, width: 50, height: 4, style: "fill:var(--fg)" }, sb);
+  const t = el("text", { x: 10, y: n - 22, style: "fill:var(--fg);font:600 " + Math.max(9, n / 28) + "px var(--mono)" }, sb); t.textContent = "100 µm";
+  return g;
+}
+function poly(g, P, style) { return el("polyline", { points: pts(P), style: "fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;" + style }, g); }
+
+/* ---------- ribbon figure ---------- */
+const RAMP_L = ["#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281", "#0d366b"];
+const RAMP_D = ["#184f95", "#1c5cab", "#256abf", "#3987e5", "#6da7ec", "#9ec5f4", "#cde2fb"];
+function rampCol(v, vmax) { const R = isDark() ? RAMP_D : RAMP_L; const i = Math.min(R.length - 1, Math.floor(Math.min(Math.abs(v), vmax) / vmax * (R.length - 0.001))); return R[i]; }
+const RB = D.ribbon, KMAX = 20;
+let ribbonDot = null;
+function drawRibbon() {
+  const svg = $("ribbon-map");
+  const g = drawMap(svg, RB.n, RB.maps, null);
+  if (RB.iso) el("path", { d: RB.iso, style: "fill:none;stroke:var(--fg2);stroke-width:1.4;stroke-dasharray:5 4;vector-effect:non-scaling-stroke" }, g);
+  for (const c of RB.cross) el("line", { x1: c[0][0], y1: c[0][1], x2: c[1][0], y2: c[1][1], style: "stroke:var(--fg);stroke-opacity:0.55;stroke-width:1;vector-effect:non-scaling-stroke" }, g);
+  for (let i = 0; i < RB.line.length - 1; i++)
+    el("line", { x1: RB.line[i][0], y1: RB.line[i][1], x2: RB.line[i + 1][0], y2: RB.line[i + 1][1], style: "stroke:" + rampCol(RB.kappa[i], KMAX) + ";stroke-width:3.2;stroke-linecap:round;vector-effect:non-scaling-stroke" }, g);
+  ribbonDot = el("circle", { r: Math.max(4, RB.n / 70), cx: -20, cy: -20, style: "fill:var(--surface);stroke:var(--fg);stroke-width:2;vector-effect:non-scaling-stroke" }, g);
+  const lg = $("ribbon-legend"); lg.textContent = "";
+  for (const [c, t] of [["--map-egl", "EGL"], ["--map-tissue", "ML and other"], ["--map-igl", "IGL"], ["--map-wm", "white matter"]]) { const s = h("span", {}, lg); const i = h("i", { class: "sw" }, s); i.style.background = "var(" + c + ")"; if (c === "--map-tissue") i.style.outline = "1px solid var(--line)"; s.append(t); }
+  const s1 = h("span", {}, lg); const grad = h("i", { class: "sw" }, s1); grad.style.width = "44px"; grad.style.background = "linear-gradient(90deg," + (isDark() ? RAMP_D : RAMP_L).join(",") + ")"; s1.append("centre line, |κ| 0 → " + KMAX + " per mm");
+  const s2 = h("span", {}, lg); const l2 = h("i", { class: "ln" }, s2); l2.style.borderTopWidth = "1px"; l2.style.borderColor = "var(--fg)"; s2.append("cross-sections, length = width");
+  const s3 = h("span", {}, lg); const l3 = h("i", { class: "ln dash" }, s3); l3.style.borderTopWidth = "2px"; l3.style.borderColor = "var(--fg2)"; s3.append("depth " + RB.depth_med + " µm below the EGL");
+}
+function profile(id, ys, label, unit, fmt) {
+  const box = $(id); box.textContent = "";
+  const W = Math.max(260, box.clientWidth || 420), H = 104, ml = 42, mr = 10, mt = 18, mb = 22;
+  const svg = el("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": label + " along the ribbon" }, box);
+  const xs = RB.s, x0 = xs[0], x1 = xs[xs.length - 1];
+  let lo = Math.min(...ys), hi = Math.max(...ys); if (lo > 0 && id !== "prof-k") lo = 0; const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const X = (v) => ml + (v - x0) / (x1 - x0) * (W - ml - mr), Y = (v) => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb);
+  const gr = el("g", { class: "grid" }, svg);
+  const ticks = niceTicks(lo, hi, 3);
+  for (const t of ticks) { el("line", { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t) }, gr); const tx = el("text", { x: ml - 6, y: Y(t) + 4, "text-anchor": "end" }, svg); tx.textContent = fmt(t); }
+  if (lo < 0 && hi > 0) el("line", { x1: ml, x2: W - mr, y1: Y(0), y2: Y(0), style: "stroke:var(--fg2);stroke-width:1" }, svg);
+  const tl = el("text", { x: ml, y: 12, style: "fill:var(--fg);font:500 12px var(--text)" }, svg); tl.textContent = label + " (" + unit + ")";
+  if (id === "prof-d") for (const t of niceTicks(x0, x1, 4)) { const tx = el("text", { x: X(t), y: H - 6, "text-anchor": "middle" }, svg); tx.textContent = t + (t === niceTicks(x0, x1, 4).slice(-1)[0] ? " µm along" : ""); }
+  el("polyline", { points: xs.map((v, i) => X(v) + "," + Y(ys[i])).join(" "), style: "fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round" }, svg);
+  const cross = el("line", { y1: mt, y2: H - mb, x1: -10, x2: -10, style: "stroke:var(--fg);stroke-width:1" }, svg);
+  const dot = el("circle", { r: 4, cx: -10, cy: -10, style: "fill:var(--s1);stroke:var(--surface);stroke-width:2" }, svg);
+  const hit = el("rect", { x: ml, y: 0, width: W - ml - mr, height: H, style: "fill:transparent;cursor:crosshair" }, svg);
+  box._set = (i) => { if (i == null) { cross.setAttribute("x1", -10); cross.setAttribute("x2", -10); dot.setAttribute("cx", -10); return; } cross.setAttribute("x1", X(xs[i])); cross.setAttribute("x2", X(xs[i])); dot.setAttribute("cx", X(xs[i])); dot.setAttribute("cy", Y(ys[i])); };
+  const pick = (e) => { const r = svg.getBoundingClientRect(); const v = x0 + ((e.clientX - r.left) * W / r.width - ml) / (W - ml - mr) * (x1 - x0); let i = Math.round((v - x0) / (x1 - x0) * (xs.length - 1)); i = Math.max(0, Math.min(xs.length - 1, i)); setProfile(i); };
+  hit.addEventListener("pointermove", pick); hit.addEventListener("pointerdown", pick);
+  hit.addEventListener("pointerleave", () => setProfile(null));
+}
+function niceTicks(lo, hi, n) { const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0))); const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= step0); const out = []; for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) out.push(Math.round(t * 1000) / 1000); return out; }
+function setProfile(i) {
+  for (const id of ["prof-k", "prof-w", "prof-d"]) $(id)._set && $(id)._set(i);
+  if (i == null) { ribbonDot.setAttribute("cx", -20); $("ribbon-readout").textContent = "Hover over a profile"; return; }
+  ribbonDot.setAttribute("cx", RB.line[i][0]); ribbonDot.setAttribute("cy", RB.line[i][1]);
+  $("ribbon-readout").textContent = "s = " + RB.s[i] + " µm   κ = " + RB.kappa[i].toFixed(1) + " /mm   w = " + Math.round(RB.width[i]) + " µm   d = " + Math.round(RB.depth[i]) + " µm";
+}
+function drawProfiles() {
+  profile("prof-k", RB.kappa, "Curvature κ(s)", "per mm", (t) => String(t));
+  profile("prof-w", RB.width, "Width w(s)", "µm", (t) => String(t));
+  profile("prof-d", RB.depth, "Depth below EGL d(s)", "µm", (t) => String(t));
+}
+
+/* stats + parameter tables */
+(function tables() {
+  const T = $("stats");
+  T.innerHTML = "<thead><tr><th>Section</th><th>Ribbon</th><th>|κ| median · p90</th><th>Width median (IQR)</th><th>Depth median (IQR)</th><th>Correlation length κ · w · d</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const [k, v] of Object.entries(D.stats)) {
+    const tr = h("tr", {}, tb);
+    h("td", {}, tr, k); h("td", { class: "num" }, tr, v.ribbon_mm + " mm");
+    h("td", { class: "num" }, tr, v.abs_curv_median_per_mm + " · " + v.curv_p90_per_mm + " /mm");
+    h("td", { class: "num" }, tr, v.width_median + " (" + v.width_iqr.join("–") + ") µm");
+    h("td", { class: "num" }, tr, v.depth_median + " (" + v.depth_iqr.join("–") + ") µm");
+    h("td", { class: "num" }, tr, v.corr_len_um.curvature + " · " + v.corr_len_um.width + " · " + v.corr_len_um.depth + " µm");
+  }
+  const P = D.params;
+  const rows = [
+    ["q", "curvature intensity of intact ribbons", "1.7 × 10⁻³ /µm", "measured: σκ ≈ 12 /mm, ℓκ = 12 µm"],
+    ["β", "bending scale (smaller = stiffer)", String(P.bend_scale), "chosen on the tuning gaps from 0.3, 1, 3"],
+    ["σd", "depth tolerance", P.sigma_depth_um + " µm", "chosen from 8, 15, 30 µm; true depth strays from the blend by " + D.depth_dev.median + " µm (median), " + D.depth_dev.p90 + " µm (90th percentile)"],
+    ["ℓd", "correlation length of depth", P.corr_depth_um + " µm", "measured: 48–60 µm on the controls"],
+    ["m", "barrier margin", "8 µm", "fixed (2 grid pixels)"],
+    ["λb, λs", "barrier and spacing weights", P.w_barrier + ", " + P.w_spacing, "fixed, large enough to act as constraints"],
+    ["h", "point spacing along the curve", "≈ 8 µm", "fixed (2 grid pixels)"],
+    ["ta, tb", "end directions", "last 60 µm", "measured on each flank"],
+    ["wa, wb, da, db", "end width and depth", "median 40–200 µm behind the end", "measured on each flank"]];
+  const Q = $("params");
+  Q.innerHTML = "<thead><tr><th>Symbol</th><th>Meaning</th><th>Value</th><th>Where it comes from</th></tr></thead>";
+  const qb = h("tbody", {}, Q);
+  for (const r of rows) { const tr = h("tr", {}, qb); h("td", { class: "num" }, tr, r[0]); h("td", {}, tr, r[1]); h("td", { class: "num" }, tr, r[2]); h("td", {}, tr, r[3]); }
+})();
+
+/* ---------- prior samples ---------- */
+const PRIOR = { sk: 0.012, lk: 12, wm: 57, ws: 25, lw: 48, dm: 85, dsd: 20, ld: 55, ds: 4, L: 640 };
+let priorBeta = 0.3, seed = 7;
+function rng() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+function gauss() { let u = 0, v = 0; while (u === 0) u = rng(); v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function ou(n, mean, sd, ell, ds) { const a = Math.exp(-ds / ell), b = sd * Math.sqrt(1 - a * a); const out = [mean + sd * gauss()]; for (let i = 1; i < n; i++) out.push(mean + (out[i - 1] - mean) * a + b * gauss()); return out; }
+function drawPrior() {
+  const svg = $("prior-svg"); svg.textContent = "";
+  const W = 1000, rows = 2, cols = 3, cw = W / cols, ch = 330, H = rows * ch;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  const n = Math.round(PRIOR.L / PRIOR.ds), sc = 0.42 * cw / (PRIOR.L / 2);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const kap = ou(n, 0, PRIOR.sk * Math.sqrt(priorBeta), PRIOR.lk, PRIOR.ds), w = ou(n, PRIOR.wm, PRIOR.ws, PRIOR.lw, PRIOR.ds).map((v) => Math.max(14, v)), d = ou(n, PRIOR.dm, PRIOR.dsd, PRIOR.ld, PRIOR.ds).map((v) => Math.max(w[0] / 2 + 10, v));
+    let x = 0, y = 0, th = 0; const P = [], N = [];
+    for (let i = 0; i < n; i++) { P.push([x, y]); N.push([-Math.sin(th), Math.cos(th)]); th += kap[i] * PRIOR.ds; x += Math.cos(th) * PRIOR.ds; y += Math.sin(th) * PRIOR.ds; }
+    const mx = P.reduce((a, p) => a + p[0], 0) / n, my = P.reduce((a, p) => a + p[1], 0) / n;
+    const T = (p) => [c * cw + cw / 2 + (p[0] - mx) * sc, r * ch + ch / 2 + (p[1] - my) * sc];
+    const up = P.map((p, i) => T([p[0] + N[i][0] * w[i] / 2, p[1] + N[i][1] * w[i] / 2])), dn = P.map((p, i) => T([p[0] - N[i][0] * w[i] / 2, p[1] - N[i][1] * w[i] / 2]));
+    el("polygon", { points: pts(up.concat(dn.reverse())), style: "fill:var(--map-igl);stroke:var(--map-igl-strong);stroke-width:0.8" }, svg);
+    el("polyline", { points: pts(P.map((p, i) => T([p[0] + N[i][0] * d[i], p[1] + N[i][1] * d[i]]))), style: "fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:2 4;stroke-linecap:round" }, svg);
+    el("polyline", { points: pts(P.map(T)), style: "fill:none;stroke:var(--fg);stroke-width:1.4" }, svg);
+  }
+  el("rect", { x: 14, y: H - 18, width: 100 * sc, height: 4, style: "fill:var(--fg)" }, svg);
+}
+(function priorControls() {
+  const seg = $("prior-beta");
+  for (const [v, t] of [[0.3, "β = 0.3, as the model"], [1, "β = 1, as measured"]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(v === priorBeta) }, seg, t);
+    b.addEventListener("click", () => { priorBeta = v; seg.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); seed = 7; drawPrior(); });
+  }
+  $("prior-draw").addEventListener("click", () => { seed = (Date.now() & 0xffff) + 1; drawPrior(); });
+})();
+
+/* ---------- examples ---------- */
+const EX = D.examples;
+let exIdx = 0;
+const exShow = { truth: true, model: true, old: true, hermite: false, line: false };
+const EX_TEXT = {
+  "Short gap": "A short break on a nearly straight stretch. The model and the smooth curve land within about 2 µm of the true centre line; the straight line is 5 µm off and the old repair 10 µm.",
+  "Gap on a bend": "The ribbon turns 70° inside the gap. The straight line cuts the corner and lands 24 µm off. The model (5 µm) and the smooth curve (2 µm) follow the bend, because both end directions point around it.",
+  "Folium tip removed": "The tip of a folium was cut out. The two ends face each other 146 µm apart across a core of white matter, but the true IGL runs 389 µm out to the tip and back. The smooth curve and the straight line take the short way across the core (41 and 52 µm off). The model's route-at-depth start goes around the tip, and that start ends with by far the lower energy, so the model follows it (8 µm off). The old repair found no bridge.",
+  "Long gap that bows out": "The two end directions differ by only 38°, but the ribbon between them bows away from the straight line: 477 µm of ribbon between ends 375 µm apart. Nothing at the ends announces the bow; the depth below the EGL does. The model stays under the EGL (7 µm off) while the smooth curve and the straight line miss by 40–49 µm.",
+  "Where the model fails": "Another folium tip, but here the two ends are only 64 µm apart with a thin white-matter core between them. Going around the tip means turning 169° in a tight radius. With the current weights that bending costs more energy than crossing the thin core, so the model cuts across through white matter and misses by 49 µm. Making white matter an absolute barrier outside the regions you confirmed as bleached would remove this failure."
+};
+function drawExample() {
+  const e = EX[exIdx];
+  const svg = $("ex-map");
+  const g = drawMap(svg, e.n, e.maps, "hatch-ex");
+  if (exShow.model && e.bands.model) el("path", { d: e.bands.model, "fill-rule": "evenodd", style: "fill:var(--s1);fill-opacity:0.16;stroke:var(--s1);stroke-width:1.2;vector-effect:non-scaling-stroke" }, g);
+  for (const k of ["line", "hermite", "old", "model"]) if (exShow[k] && e.curves[k]) poly(g, e.curves[k], "stroke:" + SERIES[k][0] + ";stroke-width:" + (k === "model" ? 3.2 : 2.4));
+  if (exShow.truth) poly(g, e.curves.truth, "stroke:var(--fg);stroke-width:2;stroke-dasharray:5 4");
+  for (const p of e.ends) el("circle", { cx: p[0], cy: p[1], r: Math.max(3.5, e.n / 75), style: "fill:var(--surface);stroke:var(--fg);stroke-width:2;vector-effect:non-scaling-stroke" }, g);
+  $("ex-title").textContent = e.label;
+  const f = $("ex-facts"); f.textContent = "";
+  for (const t of [e.section, e.length_um + " µm removed", "ends " + e.chord_um + " µm apart", "turns " + e.turn_deg + "°", "width " + e.width_ends.join(" → ") + " µm", "depth " + e.depth_ends.join(" → ") + " µm"]) h("span", {}, f, t);
+  $("ex-text").textContent = EX_TEXT[e.label] || "";
+  const T = $("ex-table");
+  T.innerHTML = "<thead><tr><th>Method</th><th>Centre-line error</th><th>Band overlap (Dice)</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const k of ["model", "old", "hermite", "line"]) {
+    const m = e.metrics[k]; const tr = h("tr", {}, tb);
+    const td = h("td", {}, tr); const sw = h("i", { class: "ln" }, td); sw.style.borderColor = SERIES[k][0]; sw.style.marginRight = "8px"; sw.style.verticalAlign = "4px"; td.append(SERIES[k][1]);
+    h("td", { class: "num" }, tr, m.err_um == null ? "no bridge" : m.err_um.toFixed(1) + " µm");
+    h("td", { class: "num" }, tr, m.err_um == null ? "–" : m.dice.toFixed(2));
+  }
+}
+(function exControls() {
+  const tabs = $("ex-tabs");
+  EX.forEach((e, i) => { const b = h("button", { type: "button", role: "tab", "aria-selected": String(i === 0) }, tabs, e.label); b.addEventListener("click", () => { exIdx = i; tabs.querySelectorAll("button").forEach((q, j) => q.setAttribute("aria-selected", String(j === i))); drawExample(); }); });
+  const chips = $("ex-chips");
+  for (const [k, col, t] of [["truth", "var(--fg)", "True centre line"], ["model", "var(--s1)", "Model"], ["old", "var(--s2)", "Old repair"], ["hermite", "var(--s3)", "Smooth curve only"], ["line", "var(--s4)", "Straight line"]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(exShow[k]) }, chips); const sw = h("i", { class: "ln" + (k === "truth" ? " dash" : "") }, b); sw.style.borderColor = col; b.append(t);
+    b.addEventListener("click", () => { exShow[k] = !exShow[k]; b.setAttribute("aria-pressed", String(exShow[k])); drawExample(); });
+  }
+})();
+
+/* ---------- weights explorer ---------- */
+const XP = D.explorer;
+let wSigma = 15, wBend = 0.3;
+const wShow = { truth: true, hermite: false, geodesic: false };
+function drawWeights() {
+  if (!XP) return;
+  const e = EX[XP.index];
+  const r = XP.grid.find((q) => q.sigma === wSigma && q.bend === wBend);
+  const g = drawMap($("w-map"), e.n, e.maps, "hatch-w");
+  if (wShow.hermite) poly(g, XP.starts.hermite, "stroke:var(--s3);stroke-width:2;stroke-dasharray:1 4");
+  if (wShow.geodesic && XP.starts.geodesic) poly(g, XP.starts.geodesic, "stroke:var(--s7);stroke-width:2;stroke-dasharray:1 4");
+  poly(g, r.curve, "stroke:var(--s1);stroke-width:3.2");
+  if (wShow.truth) poly(g, e.curves.truth, "stroke:var(--fg);stroke-width:2;stroke-dasharray:5 4");
+  for (const p of e.ends) el("circle", { cx: p[0], cy: p[1], r: Math.max(3.5, e.n / 75), style: "fill:var(--surface);stroke:var(--fg);stroke-width:2;vector-effect:non-scaling-stroke" }, g);
+  const f = $("w-facts"); f.textContent = "";
+  for (const t of ["error " + r.err_um.toFixed(1) + " µm from the true line", "length " + Math.round(r.terms.length_um) + " µm", "depth off by " + r.terms.depth_rms_um.toFixed(1) + " µm (rms)", "won from the " + (r.start === "geodesic" ? "route-at-depth" : "smooth") + " start"]) h("span", {}, f, t);
+  const bars = $("w-bars"); bars.textContent = "";
+  h("div", { class: "small" }, bars, "Energy of this curve, by term");
+  const all = XP.grid.flatMap((q) => [q.terms.bend, q.terms.depth, q.terms.barrier]); const vmax = Math.max(...all);
+  for (const [k, t] of [["bend", "bending"], ["depth", "depth"], ["barrier", "barrier"]]) {
+    const row = h("div", { class: "bar" }, bars); h("span", {}, row, t);
+    const tr = h("div", { class: "track" }, row); const fl = h("div", { class: "fill" }, tr); fl.style.width = Math.max(0.6, 100 * Math.sqrt(r.terms[k] / vmax)) + "%";
+    h("span", { class: "v" }, row, r.terms[k].toFixed(1));
+  }
+  $("w-note").textContent = "Bars use a square-root scale so that small terms stay visible. Energies are only comparable between curves for the same weights.";
+}
+(function wControls() {
+  if (!XP) return;
+  const S = $("w-sigma"), B = $("w-bend");
+  for (const v of [5, 15, 40, null]) { const b = h("button", { type: "button", "aria-pressed": String(v === wSigma) }, S, v == null ? "off" : v + " µm"); b.addEventListener("click", () => { wSigma = v; S.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawWeights(); }); }
+  for (const v of [0.1, 0.3, 1, 3]) { const b = h("button", { type: "button", "aria-pressed": String(v === wBend) }, B, String(v)); b.addEventListener("click", () => { wBend = v; B.querySelectorAll("button").forEach((q) => q.setAttribute("aria-pressed", String(q === b))); drawWeights(); }); }
+  const chips = $("w-chips");
+  for (const [k, col, t, dash] of [["truth", "var(--fg)", "True centre line", true], ["hermite", "var(--s3)", "Smooth start", true], ["geodesic", "var(--s7)", "Route-at-depth start", true]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(wShow[k]) }, chips); const sw = h("i", { class: "ln" + (dash ? " dash" : "") }, b); sw.style.borderColor = col; b.append(t);
+    b.addEventListener("click", () => { wShow[k] = !wShow[k]; b.setAttribute("aria-pressed", String(wShow[k])); drawWeights(); });
+  }
+})();
+
+/* ---------- accuracy chart ---------- */
+const A = D.accuracy;
+const ACC_ORDER = ["model", "old", "hermite", "line", "elastic"];
+function drawAccuracy() {
+  const box = $("acc-chart"); box.textContent = "";
+  const W = Math.max(300, box.clientWidth || 700), H = 300, ml = 46, mr = W < 520 ? 16 : 120, mt = 14, mb = 44;
+  const svg = el("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", "aria-label": "Share of held-out gaps predicted within 20 µm, by gap length" }, box);
+  const nb = A.bins.length;
+  const X = (i) => ml + (i + 0.5) / nb * (W - ml - mr), Y = (v) => mt + (1 - v / 100) * (H - mt - mb);
+  const gr = el("g", { class: "grid" }, svg);
+  for (const t of [0, 25, 50, 75, 100]) { el("line", { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t) }, gr); const tx = el("text", { x: ml - 8, y: Y(t) + 4, "text-anchor": "end" }, svg); tx.textContent = t + "%"; }
+  A.bins.forEach((b, i) => { const tx = el("text", { x: X(i), y: H - mb + 18, "text-anchor": "middle" }, svg); tx.textContent = b; });
+  const xl = el("text", { x: ml + (W - ml - mr) / 2, y: H - 6, "text-anchor": "middle" }, svg); xl.textContent = "gap length (µm)";
+  for (const k of ACC_ORDER.slice().reverse()) {
+    const ys = A.within20[k];
+    el("polyline", { points: ys.map((v, i) => X(i) + "," + Y(v)).join(" "), style: "fill:none;stroke:" + SERIES[k][0] + ";stroke-width:2;stroke-linejoin:round" }, svg);
+    ys.forEach((v, i) => el("circle", { cx: X(i), cy: Y(v), r: 4.5, style: "fill:" + SERIES[k][0] + ";stroke:var(--surface);stroke-width:2" }, svg));
+  }
+  if (mr > 60) for (const k of ["model", "old"]) { const v = A.within20[k][nb - 1]; const tx = el("text", { x: X(nb - 1) + 10, y: Y(v) + 4, style: "fill:var(--fg);font:500 12px var(--text)" }, svg); tx.textContent = SERIES[k][1] + " " + v + "%"; }
+  const cross = el("line", { y1: mt, y2: H - mb, x1: -10, x2: -10, style: "stroke:var(--fg2);stroke-width:1" }, svg);
+  const tip = h("div", { class: "tip", hidden: "" }, box);
+  for (let i = 0; i < nb; i++) {
+    const hit = el("rect", { x: ml + i / nb * (W - ml - mr), y: mt, width: (W - ml - mr) / nb, height: H - mt - mb, style: "fill:transparent" }, svg);
+    const show = () => {
+      cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i));
+      tip.textContent = ""; h("div", {}, tip).append(Object.assign(document.createElement("b"), { textContent: A.bins[i] + " µm" }), A.n[i] + " gaps");
+      for (const k of ACC_ORDER) { const d = h("div", {}, tip); const s = h("span", {}, d); const sw = h("i", { class: "ln" }, s); sw.style.borderColor = SERIES[k][0]; sw.style.width = "12px"; sw.style.marginRight = "6px"; sw.style.verticalAlign = "4px"; s.append(SERIES[k][1]); h("span", {}, d, A.within20[k][i] + "%"); }
+      tip.hidden = false; const left = Math.min(X(i) / W * box.clientWidth + 12, box.clientWidth - 200); tip.style.left = Math.max(0, left) + "px"; tip.style.top = "10px";
+    };
+    hit.addEventListener("pointerenter", show); hit.addEventListener("pointerdown", show);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("x1", -10); cross.setAttribute("x2", -10); });
+  }
+  const lg = $("acc-legend"); lg.textContent = "";
+  for (const k of ACC_ORDER) { const s = h("span", {}, lg); const sw = h("i", { class: "ln" }, s); sw.style.borderColor = SERIES[k][0]; s.append(SERIES[k][1]); }
+}
+(function accTable() {
+  const T = $("acc-table");
+  T.innerHTML = "<thead><tr><th>Median centre-line error</th>" + A.bins.map((b) => "<th>" + b + " µm</th>").join("") + "</tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const k of ACC_ORDER) { const tr = h("tr", {}, tb); const td = h("td", {}, tr); const sw = h("i", { class: "ln" }, td); sw.style.borderColor = SERIES[k][0]; sw.style.marginRight = "8px"; sw.style.verticalAlign = "4px"; td.append(SERIES[k][1]); A.series[k].forEach((v) => h("td", { class: "num" }, tr, v.toFixed(1) + " µm")); }
+  const tr = h("tr", {}, tb); h("td", {}, tr, "Gaps (old repair: no bridge)"); A.n.forEach((v, i) => h("td", { class: "num" }, tr, v + " (" + A.failed_old[i] + ")"));
+})();
+
+function drawAll() { drawRibbon(); drawProfiles(); drawPrior(); drawExample(); drawWeights(); drawAccuracy(); }
+drawAll();
+let rt = null;
+window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawProfiles(); drawAccuracy(); }, 150); });
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawRibbon);
+new MutationObserver(drawRibbon).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>

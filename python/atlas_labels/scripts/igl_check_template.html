@@ -1,0 +1,401 @@
+<title>IGL Problem Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: one large image panel per section with view switch, markers and answers beside it */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --muted: #5a6575; --line: #d6dce4;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --plate: #0b0e12; --chip-bg: #eef1f5;
+  --marker: #ff3b8a; --hint: #3be0ff;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --muted: #9aa5b3; --line: #2c3542;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --chip-bg: #232b36; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --muted: #9aa5b3; --line: #2c3542;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --chip-bg: #232b36; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+.lede { color: var(--muted); max-width: 72ch; margin: 8px 0 0; }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
+@media (max-width: 900px) { .sec { grid-template-columns: minmax(0, 1fr); } }
+.viewer { background: var(--plate); position: relative; min-width: 0; }
+.stage { position: relative; width: 100%; cursor: crosshair; }
+.stage img { display: block; width: 100%; height: auto; }
+.stage img.layer { position: absolute; inset: 0; image-rendering: pixelated; }
+.mk { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--marker); color: #fff; background: rgba(255, 59, 138, 0.35); font: 600 11px/18px var(--mono);
+  text-align: center; cursor: pointer; padding: 0; }
+.mk.hint { border-color: var(--hint); background: rgba(59, 224, 255, 0.25); width: 34px; height: 34px; line-height: 30px; cursor: default; }
+.mk:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.views { position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
+.views button, .opts button { font: 13px var(--text); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip-bg); color: var(--fg); cursor: pointer; min-height: 30px; }
+.views button[aria-pressed="true"], .opts button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.views button:focus-visible, .opts button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.axes { position: absolute; right: 8px; top: 10px; font: 11px var(--mono); color: #c9d2dc; z-index: 2; }
+.fol { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font: 600 12px/1 var(--mono);
+  color: #fff; background: rgba(10, 14, 20, 0.72); border: 1px solid rgba(255, 255, 255, 0.75); border-radius: 10px; padding: 3px 6px; }
+.grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.grid line { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.grid text { fill: rgba(255, 255, 255, 0.85); font: 600 22px var(--mono); }
+.rmk { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font: 700 12px/1 var(--mono); color: #062; background: #5aff96; border-radius: 10px; padding: 3px 6px; }
+.boxes polygon { fill: rgba(120, 220, 255, 0.10); stroke: #78dcff; stroke-width: 2; stroke-dasharray: 8 5; vector-effect: non-scaling-stroke; }
+.boxes text { fill: #78dcff; font: 700 24px var(--mono); paint-order: stroke; stroke: rgba(0,0,0,0.7); stroke-width: 4px; }
+.bq { display: grid; grid-template-columns: 3em 1fr; gap: 6px; align-items: center; font-size: 13px; }
+.bq .seg2 { display: flex; gap: 4px; }
+.bq .seg2 button { font: 13px var(--text); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line); background: var(--chip-bg); color: var(--fg); cursor: pointer; min-height: 30px; }
+.bq .seg2 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.side { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; border-left: 1px solid var(--line); min-width: 0; }
+@media (max-width: 900px) { .side { border-left: 0; border-top: 1px solid var(--line); } }
+.side h2 { font-size: 20px; }
+.muted { color: var(--muted); font-size: 13px; }
+.opts { display: flex; flex-direction: column; gap: 6px; }
+.opts button { text-align: left; }
+textarea { width: 100%; box-sizing: border-box; min-height: 70px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+ol.marks { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+ol.marks button { font: 12px var(--text); background: none; border: 0; color: var(--bad); cursor: pointer; padding: 0 0 0 6px; }
+.modelrow { grid-column: 1 / -1; border-top: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.modelrow h3 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0; }
+.cards { display: flex; flex-wrap: wrap; gap: 16px; }
+.mcard { flex: 1 1 380px; max-width: 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.mtitle { font: 600 15px var(--display); }
+.mstage { position: relative; background: var(--plate); border-radius: 4px; overflow: hidden; }
+.mstage img { display: block; width: 100%; height: auto; }
+.mstage img.layer { position: absolute; inset: 0; }
+.mring { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); border-radius: 50%;
+  border: 2px dashed var(--marker); pointer-events: none; }
+.sbar { position: absolute; left: 10px; bottom: 10px; height: 4px; background: #fff; pointer-events: none; }
+.sbar span { position: absolute; left: 0; bottom: 8px; font: 600 11px var(--mono); color: #fff; white-space: nowrap; text-shadow: 0 0 3px #000; }
+.mviews { display: flex; flex-wrap: wrap; gap: 4px; }
+.mviews button, .mans button { font: 13px var(--text); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip-bg); color: var(--fg); cursor: pointer; min-height: 30px; }
+.mviews button[aria-pressed="true"], .mans button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.mviews button:focus-visible, .mans button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mans { display: flex; flex-wrap: wrap; gap: 4px; }
+.clist { margin: 0; padding: 0; list-style: none; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
+.clist i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; margin-right: 8px; vertical-align: 3px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+</style>
+<div class="wrap">
+<header>
+  <h1>IGL Problem Check</h1>
+  <p class="lede">Anterior left, dorsal up, about 2 µm per pixel. Switch between the IF image, the image with the current IGL (yellow) and white-matter (orange) outlines, and the label map. Click on the image to drop a numbered marker on a problem spot; click a marker to remove it. Each marker records its nearest folium number and grid cell. Everything saves as you go.</p>
+  <p class="lede"><strong>New: a mathematical model of the IGL ribbon.</strong> The ribbon is treated as a smooth centre line with a width, sitting at its own depth below the EGL. A missing stretch is predicted as the curve that bends least and stays at that depth, joining the two sides with matching directions. Tested on 180 stretches of 50–500 µm cut out of your intact control ribbons, it puts the centre line a median 5 µm from the truth (the old repair: 15 µm, and it failed on 16 of 90 test gaps); for gaps of 350–500 µm, 83% land within 20 µm (old: 21%). Below each section: the model's predictions at your markers. Please pick the right one at each marker.</p>
+  <p class="lede">Earlier (second final): s4_A marker 1 is joined through the marker; folium 6 is rebuilt from the image (the EGL there is DAPI-dense and sits about 50 µm deeper than in the neighbouring folia, under a dim outer layer); the box fixes you accepted (s4_A B5, s4_C B2) are added; on s4_C every marker you placed on a break now has the IGL joined through it. Check "Image + FINAL outlines" and press Looks right or Needs changes again.</p>
+  <p class="lede">Earlier: the IGL ribbon repair, which bridges gaps from the IGL itself (green numbered repairs R1, R2). On s4_C, R1 sits at folium 4 where you said the IGL was not called; on s4_A, R1 crosses the bleached patch in box B5. Accept or reject each.</p>
+  <p class="lede">Earlier: proposed fixes for s4_A (folium 6 smear, bleach box B5) and s4_C (bleach box B2). Compare "Labels" with "Fixed labels" and accept or reject each fix. For s4_C, please drop a marker on the spot "just above 4" where the IGL was not called.</p>
+  <p class="lede">Dashed blue boxes B1–B5 are the five strongest candidates for a photobleached 40x field (226 × 169 µm, dimmer than its surroundings in all three channels). Tell me for each whether it is really bleached; s5_G is included as a check. If a bleached patch has no box, drop a marker on it.</p>
+  <p class="lede">Folium numbers are automatic: they run from the anterior end of the base over the top to the posterior end, one number per stretch of surface between fissure openings. Some folia may share a number or be split in two; the 250 µm grid (letters across, numbers down) is always exact.</p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+<div class="legend"><span><i style="background:rgb(232,186,28)"></i>IGL</span><span><i style="background:rgb(226,122,50)"></i>white matter</span><span><i style="background:rgb(146,212,140)"></i>ML</span><span><i style="background:rgb(214,64,64)"></i>PCL</span><span><i style="background:rgb(0,196,214)"></i>oEGL</span><span><i style="background:rgb(110,175,235)"></i>iEGL</span><span><i style="background:rgb(196,84,196)"></i>DCN</span><span><i style="background:rgb(80,80,86)"></i>tear</span><span>Image: NeuN green, DAPI blue, p27 red</span></div>
+<div id="secs" style="display:flex;flex-direction:column;gap:24px"></div>
+</div>
+<script>
+const ITEMS = __DATA__;
+const PROBLEMS = [["broken", "IGL broken inside folia"], ["thickness", "IGL too thick or too thin"], ["missing", "IGL missing from folia"], ["mislabel", "Other tissue labelled IGL"], ["ok", "Actually fine"]];
+const state = {};
+const chains = {};
+let db = null;
+const statusEl = document.getElementById("status");
+function setStatus(t, err) { statusEl.textContent = t; statusEl.classList.toggle("err", !!err); }
+
+function section(it) {
+  const sec = document.createElement("section"); sec.className = "sec"; sec.id = "s-" + it.id;
+  const viewer = document.createElement("div"); viewer.className = "viewer";
+  const views = document.createElement("div"); views.className = "views"; views.setAttribute("role", "group"); views.setAttribute("aria-label", "View for " + it.id);
+  const stage = document.createElement("div"); stage.className = "stage";
+  const base = document.createElement("img"); base.src = it.img; base.width = it.w; base.height = it.h; base.alt = "IF image of " + it.id;
+  const outl = document.createElement("img"); outl.className = "layer"; outl.src = it.outline; outl.alt = ""; outl.hidden = true;
+  const labs = document.createElement("img"); labs.className = "layer"; labs.src = it.labels; labs.alt = ""; labs.hidden = true;
+  stage.append(base, outl, labs);
+  let fno = null, fnl = null;
+  if (it.final_outline) {
+    fno = document.createElement("img"); fno.className = "layer"; fno.src = it.final_outline; fno.alt = ""; fno.hidden = true;
+    fnl = document.createElement("img"); fnl.className = "layer"; fnl.src = it.final_labels; fnl.alt = ""; fnl.hidden = true;
+    stage.append(fno, fnl);
+  }
+  let ro = null, rl = null, rlayer = null;
+  if (it.ribbon_outline) {
+    ro = document.createElement("img"); ro.className = "layer"; ro.src = it.ribbon_outline; ro.alt = ""; ro.hidden = true;
+    rl = document.createElement("img"); rl.className = "layer"; rl.src = it.ribbon_labels; rl.alt = ""; rl.hidden = true;
+    rlayer = document.createElement("div"); rlayer.hidden = true;
+    for (const r of it.ribbon) {
+      const b = document.createElement("span"); b.className = "rmk"; b.textContent = r.id;
+      b.style.left = (r.x * 100) + "%"; b.style.top = (r.y * 100) + "%"; rlayer.appendChild(b);
+    }
+    stage.append(ro, rl, rlayer);
+  }
+  let fo = null, fl = null;
+  if (it.fix_outline) {
+    fo = document.createElement("img"); fo.className = "layer"; fo.src = it.fix_outline; fo.alt = ""; fo.hidden = true;
+    fl = document.createElement("img"); fl.className = "layer"; fl.src = it.fix_labels; fl.alt = ""; fl.hidden = true;
+    stage.append(fo, fl);
+  }
+  const vdefs = [["img", "Image"], ["outline", "Image + outlines"], ["labels", "Labels"]].concat(
+    it.fix_outline ? [["fixo", "Image + fixed outlines"], ["fixl", "Fixed labels"]] : []).concat(
+    it.ribbon_outline ? [["ribo", "Image + ribbon repair"], ["ribl", "Ribbon repair labels"]] : []).concat(
+    it.final_outline ? [["fino", "Image + FINAL outlines"], ["finl", "FINAL labels"]] : []);
+  for (const [v, t] of vdefs) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("aria-pressed", String(v === "outline"));
+    b.addEventListener("click", (e) => { e.stopPropagation(); setView(v); });
+    views.appendChild(b);
+  }
+  function setView(v) {
+    outl.hidden = v !== "outline"; labs.hidden = v !== "labels";
+    if (fo) { fo.hidden = v !== "fixo"; fl.hidden = v !== "fixl"; }
+    if (ro) { ro.hidden = v !== "ribo"; rl.hidden = v !== "ribl"; rlayer.hidden = !(v === "ribo" || v === "ribl"); }
+    if (fno) { fno.hidden = v !== "fino"; fnl.hidden = v !== "finl"; }
+    views.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", String(vdefs[i][0] === v)));
+  }
+  setView("outline");
+  const folLayer = document.createElement("div"); folLayer.className = "folia";
+  for (const f of it.folia) {
+    const b = document.createElement("span"); b.className = "fol"; b.textContent = String(f.n);
+    b.style.left = (f.x * 100) + "%"; b.style.top = (f.y * 100) + "%"; folLayer.appendChild(b);
+  }
+  const NS = "http://www.w3.org/2000/svg";
+  const grid = document.createElementNS(NS, "svg"); grid.setAttribute("class", "grid");
+  grid.setAttribute("viewBox", "0 0 " + it.w + " " + it.h); grid.setAttribute("preserveAspectRatio", "none");
+  const cell = it.cell_px;
+  for (let i = 0; i * cell <= it.w; i++) {
+    const l = document.createElementNS(NS, "line"); l.setAttribute("x1", i * cell); l.setAttribute("x2", i * cell); l.setAttribute("y1", 0); l.setAttribute("y2", it.h); grid.appendChild(l);
+    if ((i + 0.5) * cell < it.w) { const t = document.createElementNS(NS, "text"); t.setAttribute("x", (i + 0.5) * cell); t.setAttribute("y", 26); t.setAttribute("text-anchor", "middle"); t.textContent = String.fromCharCode(65 + i); grid.appendChild(t); }
+  }
+  for (let j = 0; j * cell <= it.h; j++) {
+    const l = document.createElementNS(NS, "line"); l.setAttribute("y1", j * cell); l.setAttribute("y2", j * cell); l.setAttribute("x1", 0); l.setAttribute("x2", it.w); grid.appendChild(l);
+    if ((j + 0.5) * cell < it.h) { const t = document.createElementNS(NS, "text"); t.setAttribute("x", 8); t.setAttribute("y", (j + 0.5) * cell + 8); t.textContent = String(j + 1); grid.appendChild(t); }
+  }
+  grid.style.display = "none";
+  const bxl = document.createElementNS(NS, "svg"); bxl.setAttribute("class", "grid boxes");
+  bxl.setAttribute("viewBox", "0 0 " + it.w + " " + it.h); bxl.setAttribute("preserveAspectRatio", "none");
+  for (const b of it.boxes) {
+    const pg = document.createElementNS(NS, "polygon");
+    pg.setAttribute("points", b.pts.map((q) => (q[0] * it.w) + "," + (q[1] * it.h)).join(" ")); bxl.appendChild(pg);
+    const cx = b.pts.reduce((a, q) => a + q[0], 0) / 4 * it.w, cy = b.pts.reduce((a, q) => a + q[1], 0) / 4 * it.h;
+    const tx = document.createElementNS(NS, "text"); tx.setAttribute("x", cx); tx.setAttribute("y", cy + 8); tx.setAttribute("text-anchor", "middle"); tx.textContent = b.id; bxl.appendChild(tx);
+  }
+  stage.append(grid, bxl, folLayer);
+  for (const [name, layer, on] of [["Folium numbers", folLayer, true], ["Grid", grid, false], ["Bleach candidates", bxl, true]]) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.setAttribute("aria-pressed", String(on));
+    if (!on) layer.style.display = "none";
+    b.addEventListener("click", (e) => { e.stopPropagation(); const show = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(show)); layer.style.display = show ? "" : "none"; });
+    views.appendChild(b);
+  }
+  const axes = document.createElement("span"); axes.className = "axes"; axes.textContent = "← anterior · dorsal ↑";
+  viewer.append(views, axes, stage);
+  for (const h of it.hint) {
+    const m = document.createElement("span"); m.className = "mk hint"; m.style.left = (h.x * 100) + "%"; m.style.top = (h.y * 100) + "%";
+    m.title = h.text; m.textContent = "?"; stage.appendChild(m);
+  }
+  stage.addEventListener("click", (e) => {
+    if (!db || !it.ask || e.target.classList.contains("mk")) return;
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    const cur = get(it.id); cur.markers = (cur.markers || []).concat([where(it, x, y)]);
+    save(it.id, cur);
+  });
+  const side = document.createElement("div"); side.className = "side";
+  const h = document.createElement("h2"); h.textContent = it.id.replace("_p27", "");
+  side.appendChild(h);
+  if (it.final_outline) {
+    const fh = document.createElement("div"); fh.className = "muted"; fh.style.color = "var(--fg)";
+    fh.textContent = "FINAL: everything you approved, applied (changes outlined in white). Switch to Image + FINAL outlines or FINAL labels."; side.appendChild(fh);
+    const row = document.createElement("div"); row.className = "bq"; row.style.gridTemplateColumns = "1fr";
+    const seg = document.createElement("div"); seg.className = "seg2"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Final labels for " + it.id);
+    for (const [v, t] of [["ok", "Looks right"], ["changes", "Needs changes"]]) {
+      const btn = document.createElement("button"); btn.type = "button"; btn.textContent = t; btn.dataset.fin = v;
+      btn.setAttribute("aria-pressed", "false"); btn.disabled = true; btn.className = "finbtn";
+      btn.addEventListener("click", () => { const cur = get(it.id); cur.final = cur.final === v ? undefined : v; if (!cur.final) delete cur.final; save(it.id, cur); });
+      seg.appendChild(btn);
+    }
+    row.appendChild(seg); side.appendChild(row);
+  }
+  if (it.ribbon.length) {
+    const rh = document.createElement("div"); rh.className = "muted"; rh.textContent = "Ribbon repair (switch to Image + ribbon repair or Ribbon repair labels; repaired IGL is outlined in green)"; side.appendChild(rh);
+    for (const r of it.ribbon) {
+      const row = document.createElement("div"); row.className = "bq"; row.style.gridTemplateColumns = "1fr";
+      const l = document.createElement("span"); l.textContent = r.id + ": IGL bridged near folium " + r.folium + " (" + Math.round(r.area_um2) + " µm²)";
+      const seg = document.createElement("div"); seg.className = "seg2"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Ribbon repair " + r.id);
+      for (const [v, t] of [["accept", "Accept"], ["reject", "Reject"]]) {
+        const btn = document.createElement("button"); btn.type = "button"; btn.textContent = t; btn.dataset.rib = r.id; btn.dataset.v = v;
+        btn.setAttribute("aria-pressed", "false"); btn.disabled = true; btn.className = "ribbtn";
+        btn.addEventListener("click", () => { const cur = get(it.id); cur.ribbon = cur.ribbon || {}; if (cur.ribbon[r.id] === v) delete cur.ribbon[r.id]; else cur.ribbon[r.id] = v; save(it.id, cur); });
+        seg.appendChild(btn);
+      }
+      row.append(l, seg); side.appendChild(row);
+    }
+  }
+  if (it.fixes.length) {
+    const fh = document.createElement("div"); fh.className = "muted"; fh.textContent = "Proposed fixes (switch to Fixed labels or Image + fixed outlines; changed areas are outlined in light blue)"; side.appendChild(fh);
+    for (const f of it.fixes) {
+      const row = document.createElement("div"); row.className = "bq"; row.style.gridTemplateColumns = "1fr";
+      const l = document.createElement("span"); l.textContent = f.text;
+      const seg = document.createElement("div"); seg.className = "seg2"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", f.text);
+      for (const [v, t] of [["accept", "Accept"], ["reject", "Reject"]]) {
+        const btn = document.createElement("button"); btn.type = "button"; btn.textContent = t; btn.dataset.fix = f.id; btn.dataset.v = v;
+        btn.setAttribute("aria-pressed", "false"); btn.disabled = true; btn.className = "fixbtn";
+        btn.addEventListener("click", () => { const cur = get(it.id); cur.fixes = cur.fixes || {}; if (cur.fixes[f.id] === v) delete cur.fixes[f.id]; else cur.fixes[f.id] = v; save(it.id, cur); });
+        seg.appendChild(btn);
+      }
+      row.append(l, seg); side.appendChild(row);
+    }
+  }
+  if (it.boxes.length) {
+    const bh = document.createElement("div"); bh.className = "muted"; bh.textContent = "Dashed boxes: is this patch bleached?"; side.appendChild(bh);
+    for (const b of it.boxes) {
+      const row = document.createElement("div"); row.className = "bq";
+      const l = document.createElement("span"); l.textContent = b.id;
+      const seg = document.createElement("div"); seg.className = "seg2"; seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Is box " + b.id + " bleached");
+      for (const [v, t] of [["yes", "Bleached"], ["no", "Not bleached"]]) {
+        const btn = document.createElement("button"); btn.type = "button"; btn.textContent = t; btn.dataset.box = b.id; btn.dataset.v = v;
+        btn.setAttribute("aria-pressed", "false"); btn.disabled = true; btn.className = "boxbtn";
+        btn.addEventListener("click", () => { const cur = get(it.id); cur.boxes = cur.boxes || {}; cur.boxes[b.id] = cur.boxes[b.id] === v ? undefined : v; if (!cur.boxes[b.id]) delete cur.boxes[b.id]; save(it.id, cur); });
+        seg.appendChild(btn);
+      }
+      row.append(l, seg); side.appendChild(row);
+    }
+  }
+  if (!it.ask) {
+    const p = document.createElement("p"); p.className = "muted"; p.textContent = "Reference: you graded this IGL good. Only the bleach boxes need an answer here.";
+    side.appendChild(p);
+    const ol = document.createElement("ol"); ol.className = "marks"; ol.hidden = true; side.appendChild(ol);
+  } else {
+    if (it.hint.length) { const p = document.createElement("p"); p.className = "muted"; p.textContent = "Blue ring: " + it.hint[0].text + "."; side.appendChild(p); }
+    const q = document.createElement("div"); q.className = "muted"; q.textContent = "What is wrong (tick all that apply)"; side.appendChild(q);
+    const opts = document.createElement("div"); opts.className = "opts"; opts.setAttribute("role", "group"); opts.setAttribute("aria-label", "Problems in " + it.id);
+    for (const [k, t] of PROBLEMS) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.dataset.k = k; b.setAttribute("aria-pressed", "false"); b.disabled = true;
+      b.addEventListener("click", () => { const cur = get(it.id); const s = new Set(cur.problems || []); s.has(k) ? s.delete(k) : s.add(k); cur.problems = [...s]; save(it.id, cur); });
+      opts.appendChild(b);
+    }
+    side.appendChild(opts);
+    const ml = document.createElement("div"); ml.className = "muted"; ml.textContent = "Markers (click the image to add)"; side.appendChild(ml);
+    const ol = document.createElement("ol"); ol.className = "marks"; side.appendChild(ol);
+    const ta = document.createElement("textarea"); ta.id = "note-" + it.id; ta.placeholder = "Notes, e.g. folium 7: IGL broken; marker 2 runs into ML"; ta.disabled = true;
+    ta.setAttribute("aria-label", "Notes for " + it.id);
+    ta.addEventListener("change", () => { const cur = get(it.id); cur.note = ta.value.trim(); save(it.id, cur); });
+    side.appendChild(ta);
+  }
+  sec.append(viewer, side);
+  if (it.model && it.model.length) sec.appendChild(modelRow(it));
+  sec._stage = stage;
+  return sec;
+}
+
+const CAND_COL = { A: "rgb(59,224,255)", B: "rgb(255,90,209)", C: "rgb(255,255,255)" };
+function modelRow(it) {
+  const row = document.createElement("div"); row.className = "modelrow";
+  const h = document.createElement("h3"); h.textContent = "Model predictions at your markers"; row.appendChild(h);
+  const p = document.createElement("p"); p.className = "muted"; p.style.margin = "0";
+  p.textContent = "600 × 600 µm around each marker (dashed ring), 1 µm per pixel. The model continues the IGL ribbon from the ends it can see, keeping it smooth and at the ribbon's own depth below the EGL; A is its best guess, B and C the next distinct ones. Each is drawn as a centre line with circles at its two ends and the outline of the band it would paint. Pick the one that follows the real IGL, or None.";
+  row.appendChild(p);
+  const cards = document.createElement("div"); cards.className = "cards";
+  for (const m of it.model) {
+    const card = document.createElement("div"); card.className = "mcard";
+    const t = document.createElement("div"); t.className = "mtitle"; t.textContent = it.id.replace("_p27", "") + " · " + m.label; card.appendChild(t);
+    const st = document.createElement("div"); st.className = "mstage";
+    const base = document.createElement("img"); base.src = m.img; base.width = m.n; base.height = m.n; base.alt = "IF image around " + m.label;
+    st.appendChild(base);
+    const lay = {};
+    for (const [k, src] of Object.entries(m.layers)) { const im = document.createElement("img"); im.className = "layer"; im.src = src; im.alt = ""; im.hidden = true; lay[k] = im; st.appendChild(im); }
+    const ring = document.createElement("span"); ring.className = "mring"; st.appendChild(ring);
+    const sb = document.createElement("div"); sb.className = "sbar"; sb.style.width = (100 / 600 * 100) + "%"; const sbt = document.createElement("span"); sbt.textContent = "100 µm"; sb.appendChild(sbt); st.appendChild(sb);
+    const views = document.createElement("div"); views.className = "mviews"; views.setAttribute("role", "group"); views.setAttribute("aria-label", "View for " + m.label);
+    const vdefs = [["img", "Image"], ["now", "Labels now"]].concat(lay.last ? [["last", "Last fix"]] : []).concat(m.cands.map((c) => [c.id, c.id])).concat(m.cands.length > 1 ? [["all", "All"]] : []);
+    function setView(v) {
+      for (const [k, im] of Object.entries(lay)) im.hidden = !(k === v || (v === "all" && CAND_COL[k]));
+      views.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", String(vdefs[i][0] === v)));
+    }
+    for (const [v, tx] of vdefs) { const b = document.createElement("button"); b.type = "button"; b.textContent = tx; b.addEventListener("click", () => setView(v)); views.appendChild(b); }
+    setView(m.cands.length ? "A" : "now");
+    card.append(st, views);
+    const ul = document.createElement("ul"); ul.className = "clist";
+    for (const c of m.cands) { const li = document.createElement("li"); const sw = document.createElement("i"); sw.style.background = CAND_COL[c.id]; sw.style.outline = "1px solid var(--line)"; li.append(sw, document.createTextNode(c.id + ": " + c.text)); ul.appendChild(li); }
+    if (!m.cands.length) { const li = document.createElement("li"); li.textContent = "No completion found that passes this marker."; ul.appendChild(li); }
+    card.appendChild(ul);
+    const ans = document.createElement("div"); ans.className = "mans"; ans.setAttribute("role", "group"); ans.setAttribute("aria-label", "Which prediction is right at " + m.label);
+    for (const [v, tx] of m.cands.map((c) => [c.id, c.id + " is right"]).concat([["none", "None of these"]])) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = tx; b.className = "modbtn"; b.dataset.mk = m.name; b.dataset.v = v; b.disabled = true; b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => { const cur = get(it.id); cur.model = cur.model || {}; if (cur.model[m.name] === v) delete cur.model[m.name]; else cur.model[m.name] = v; save(it.id, cur); });
+      ans.appendChild(b);
+    }
+    card.appendChild(ans);
+    cards.appendChild(card);
+  }
+  row.appendChild(cards);
+  return row;
+}
+
+function where(it, x, y) {
+  let best = null, bd = Infinity;
+  for (const f of it.folia) { const d = Math.hypot((f.x - x) * it.w, (f.y - y) * it.h); if (d < bd) { bd = d; best = f.n; } }
+  const col = String.fromCharCode(65 + Math.floor(x * it.w / it.cell_px)), row = 1 + Math.floor(y * it.h / it.cell_px);
+  return { x: Math.round(x * 10000) / 10000, y: Math.round(y * 10000) / 10000, folium: best, cell: col + row };
+}
+
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+
+function paint(id) {
+  const it = ITEMS.find((i) => i.id === id); if (!it) return;
+  const sec = document.getElementById("s-" + id); const cur = state[id] || {};
+  sec.querySelectorAll(".boxbtn").forEach((b) => b.setAttribute("aria-pressed", String((cur.boxes || {})[b.dataset.box] === b.dataset.v)));
+  sec.querySelectorAll(".fixbtn").forEach((b) => b.setAttribute("aria-pressed", String((cur.fixes || {})[b.dataset.fix] === b.dataset.v)));
+  sec.querySelectorAll(".ribbtn").forEach((b) => b.setAttribute("aria-pressed", String((cur.ribbon || {})[b.dataset.rib] === b.dataset.v)));
+  sec.querySelectorAll(".finbtn").forEach((b) => b.setAttribute("aria-pressed", String(cur.final === b.dataset.fin)));
+  sec.querySelectorAll(".modbtn").forEach((b) => b.setAttribute("aria-pressed", String((cur.model || {})[b.dataset.mk] === b.dataset.v)));
+  if (!it.ask) return;
+  sec.querySelectorAll(".opts button").forEach((b) => b.setAttribute("aria-pressed", String((cur.problems || []).includes(b.dataset.k))));
+  sec._stage.querySelectorAll(".mk:not(.hint)").forEach((m) => m.remove());
+  const ol = sec.querySelector("ol.marks"); ol.textContent = "";
+  (cur.markers || []).forEach((m, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "mk"; b.textContent = String(i + 1);
+    b.style.left = (m.x * 100) + "%"; b.style.top = (m.y * 100) + "%"; b.setAttribute("aria-label", "Remove marker " + (i + 1));
+    b.addEventListener("click", (e) => { e.stopPropagation(); const c = get(id); c.markers.splice(i, 1); save(id, c); });
+    sec._stage.appendChild(b);
+    const li = document.createElement("li"); li.textContent = "marker " + (i + 1) + (m.folium ? " · folium " + m.folium : "") + (m.cell ? " · " + m.cell : "");
+    const rm = document.createElement("button"); rm.type = "button"; rm.textContent = "remove";
+    rm.addEventListener("click", () => { const c = get(id); c.markers.splice(i, 1); save(id, c); });
+    li.appendChild(rm); ol.appendChild(li);
+  });
+  const ta = document.getElementById("note-" + id); if (ta && document.activeElement !== ta) ta.value = cur.note || "";
+}
+
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString();
+  state[id] = cur; paint(id); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc("igl_check/" + id).set(cur))
+    .then(() => setStatus("Saved"))
+    .catch((e) => setStatus(e && e.code === "invalid_argument" ? "You can view this page but not save answers." : "Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+
+const secs = document.getElementById("secs");
+for (const it of ITEMS) secs.appendChild(section(it));
+
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to mark problems.", true); return; }
+  document.querySelectorAll(".opts button, textarea, .boxbtn, .fixbtn, .ribbtn, .finbtn, .modbtn").forEach((b) => { b.disabled = false; });
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection("igl_check").onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); if (!statusEl.classList.contains("err") || statusEl.textContent.startsWith("Can't reach")) setStatus("Answers load and save automatically"); }
+    ITEMS.forEach((i) => paint(i.id));
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

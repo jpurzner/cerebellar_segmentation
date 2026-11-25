@@ -1,0 +1,257 @@
+<title>IGL Anomaly Check</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: summary of the model up top, then one large image panel per section with its flag list beside it (same family as IGL Problem Check) */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --plate: #0b0e12; --marker: #ff3b8a;
+  --shape: #ff5ad1; --signal: #3be0ff; --likely: #ffffff; --possible: #ffb000;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+p { margin: 0; max-width: 72ch; }
+.lede { color: var(--fg2); }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 900px) { .intro { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+@media (max-width: 900px) { .sec { grid-template-columns: minmax(0, 1fr); } }
+.viewer { background: var(--plate); position: relative; min-width: 0; }
+.stage { position: relative; width: 100%; cursor: crosshair; }
+.stage img { display: block; width: 100%; height: auto; }
+.stage img.layer { position: absolute; inset: 0; image-rendering: pixelated; }
+.ov { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ov polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.ov .hl { stroke-width: 9 !important; }
+.tag { position: absolute; transform: translate(-50%, -130%); pointer-events: none; font: 700 11px/1 var(--mono); padding: 3px 5px; border-radius: 8px; color: #0b0e12; }
+.fol { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font: 600 11px/1 var(--mono);
+  color: #fff; background: rgba(10, 14, 20, 0.72); border: 1px solid rgba(255, 255, 255, 0.6); border-radius: 10px; padding: 2px 5px; }
+.mk { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--marker); color: #fff; background: rgba(255, 59, 138, 0.35); font: 600 11px/18px var(--mono); text-align: center; cursor: pointer; padding: 0; }
+.views { position: absolute; top: 8px; left: 8px; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
+.views button, .seg2 button { font: 13px var(--text); padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 30px; }
+.views button[aria-pressed="true"], .seg2 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.axes { position: absolute; right: 8px; top: 10px; font: 11px var(--mono); color: #c9d2dc; z-index: 2; }
+.side { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid var(--line); min-width: 0; max-height: 1400px; overflow-y: auto; }
+@media (max-width: 900px) { .side { border-left: 0; border-top: 1px solid var(--line); max-height: none; } }
+.muted { color: var(--muted); font-size: 13px; }
+.item { display: grid; grid-template-columns: 2.6em minmax(0, 1fr); gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.item .id { font: 700 12px var(--mono); padding: 2px 4px; border-radius: 6px; text-align: center; color: #0b0e12; align-self: start; }
+.item .what b { font-weight: 500; }
+.item .seg2 { grid-column: 2; display: flex; gap: 4px; flex-wrap: wrap; }
+.item .seg2 button { min-height: 28px; padding: 2px 9px; font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--fg2); }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 4px solid; margin-right: 6px; vertical-align: 3px; }
+textarea { width: 100%; box-sizing: border-box; min-height: 60px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+ol.marks { margin: 0; padding-left: 20px; font-size: 13px; }
+ol.marks button { font: 12px var(--text); background: none; border: 0; color: var(--bad); cursor: pointer; padding: 0 0 0 6px; }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>IGL Anomaly Check</h1>
+  <p class="lede">A model of the whole IGL, learned from the five intact controls, describes every 100 µm stretch of IGL ribbon by its width, depth below the EGL, ML thickness, contact with the EGL and the white matter, bend, and NeuN / DAPI / p27 brightness. A stretch is flagged when it is improbable for a control (global test) or differs from the same ribbon 150–450 µm away more than intact ribbons ever do (local test). Ribbon ends are flagged as breaks when the gap model can continue them cheaply. Below are the seven 10x controls the model was not fitted on. Please mark each flag Real problem or Fine, and click the image to drop a marker on anything it missed.</p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+<div class="intro">
+  <div class="card">
+    <h3>Which properties are narrow</h3>
+    <p class="muted">Spread of each property along intact ribbons, compared with the same ribbon 150–450 µm away (robust standard deviation), and how far it must move before a stretch is flagged.</p>
+    <div class="tbl"><table id="narrow"></table></div>
+  </div>
+  <div class="card">
+    <h3>How it was tested</h3>
+    <div class="tbl"><table id="tests"></table></div>
+    <h3>Share of IGL ribbon flagged</h3>
+    <div class="tbl"><table id="secs-table"></table></div>
+    <p class="muted">The EZH2 cKO sections are flagged five to ten times more than the controls. That is the model saying their IGL does not look like control IGL; it cannot tell segmentation errors from the cKO phenotype, so they are not on this page.</p>
+  </div>
+</div>
+<div class="legend"><span><i style="border-color:var(--shape)"></i>F: shape flag</span><span><i style="border-color:var(--signal)"></i>F: signal flag</span><span><i style="border-color:var(--likely);border-top-style:dashed;background:#555"></i>K: likely break (continuation shown)</span><span><i style="border-color:var(--possible);border-top-style:dashed"></i>K: possible break, crosses white-matter label</span></div>
+<div id="secs" style="display:flex;flex-direction:column;gap:24px"></div>
+</div>
+<script>
+const DATA = __DATA__;
+const ITEMS = DATA.items, SUM = DATA.summary;
+const NS = "http://www.w3.org/2000/svg";
+const COL = { shape: "var(--shape)", signal: "var(--signal)", likely: "var(--likely)", possible: "var(--possible)" };
+const TAGBG = { shape: "#ff5ad1", signal: "#3be0ff", likely: "#ffffff", possible: "#ffb000" };
+const state = {}, chains = {};
+let db = null;
+const statusEl = document.getElementById("status");
+function setStatus(t, err) { statusEl.textContent = t; statusEl.classList.toggle("err", !!err); }
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function s(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+/* summary tables */
+(function () {
+  const sc = SUM.scale, tl = SUM.tau_local;
+  const pct2 = (v) => "±" + Math.round((Math.pow(2, v) - 1) * 100) + "%";
+  const rows = [
+    ["Width", "×/÷ " + Math.exp(sc.dlogw).toFixed(2), "×/÷ " + Math.exp(sc.dlogw * tl.dlogw).toFixed(1), "no"],
+    ["Depth below the EGL", "±" + Math.round(sc.dd) + " µm", "±" + Math.round(sc.dd * tl.dd) + " µm", "fairly"],
+    ["ML thickness (IGL to EGL)", "±" + Math.round(sc.dml) + " µm", "±" + Math.round(sc.dml * tl.dml) + " µm", "fairly"],
+    ["IGL touching the EGL", "almost never", "over " + Math.round(Math.min(1, sc.contact * tl.contact) * 100) + "% of a stretch", "yes"],
+    ["NeuN brightness", pct2(sc.dneun), pct2(sc.dneun * tl.dneun), "yes"],
+    ["DAPI brightness", pct2(sc.ddapi), pct2(sc.ddapi * tl.ddapi), "yes"],
+    ["p27 brightness", pct2(sc.dp27), pct2(sc.dp27 * tl.dp27), "yes"]];
+  const T = document.getElementById("narrow");
+  T.innerHTML = "<thead><tr><th>Property</th><th>Spread</th><th>Flagged beyond</th><th>Narrow?</th></tr></thead>";
+  const tb = h("tbody", {}, T);
+  for (const r of rows) { const tr = h("tr", {}, tb); h("td", {}, tr, r[0]); h("td", { class: "num" }, tr, r[1]); h("td", { class: "num" }, tr, r[2]); h("td", {}, tr, r[3]); }
+  const S = SUM.synthetic.found, B = SUM.breaks;
+  const tests = [
+    ["Dim patch, all channels ×0.35", S.dim], ["Smear: IGL pushed up to the EGL", S.smear], ["Bulge: ribbon ~2× wider", S.bulge], ["Thinning to 40% width", S.thin],
+    ["Cut gap, end with a cheap continuation", B.found + " ends (" + B.no_end + " cut gaps left no end to test)"],
+    ["Natural ends of the controls flagged", B.natural], ["False flags per control section", String(SUM.synthetic.false_flags_per_section)]];
+  const U = document.getElementById("tests");
+  U.innerHTML = "<thead><tr><th>Artificial defect in a control (model fitted on the other four)</th><th>Found</th></tr></thead>";
+  const ub = h("tbody", {}, U);
+  for (const r of tests) { const tr = h("tr", {}, ub); h("td", {}, tr, r[0]); h("td", { class: "num" }, tr, r[1]); }
+  const V = document.getElementById("secs-table");
+  V.innerHTML = "<thead><tr><th>Group</th><th>Sections</th><th>Flagged</th></tr></thead>";
+  const vb = h("tbody", {}, V);
+  const groups = [["Training controls (each scored by a model fitted on the other four)", (k, v) => v.training],
+    ["Other 10x controls", (k, v) => !v.training && v.genotype === "control" && !k.startsWith("s1_2")],
+    ["s1_2 automatic labels (20x control)", (k, v) => k === "s1_2 (auto)"], ["EZH2 cKO (20x)", (k, v) => v.genotype !== "control"]];
+  for (const [name, f] of groups) {
+    const e = Object.entries(SUM.sections).filter(([k, v]) => f(k, v)); if (!e.length) continue;
+    const p = e.map(([, v]) => v.flagged_pct); const tr = h("tr", {}, vb);
+    h("td", {}, tr, name); h("td", { class: "num" }, tr, String(e.length)); h("td", { class: "num" }, tr, (e.length > 1 ? Math.min(...p).toFixed(1) + "–" + Math.max(...p).toFixed(1) : p[0].toFixed(1)) + "%");
+  }
+})();
+
+function section(it) {
+  const sec = h("section", { class: "sec", id: "s-" + it.id });
+  const viewer = h("div", { class: "viewer" }, sec);
+  const views = h("div", { class: "views", role: "group", "aria-label": "View for " + it.id }, viewer);
+  h("span", { class: "axes" }, viewer, "← anterior · dorsal ↑");
+  const stage = h("div", { class: "stage" }, viewer);
+  const base = h("img", { src: it.img, width: it.w, height: it.h, alt: "IF image of " + it.id }, stage);
+  const outl = h("img", { class: "layer", src: it.outline, alt: "" }, stage); outl.hidden = true;
+  const labs = h("img", { class: "layer", src: it.labels, alt: "" }, stage); labs.hidden = true;
+  const ov = s("svg", { class: "ov", viewBox: "0 0 " + it.w + " " + it.h, preserveAspectRatio: "none" }, stage);
+  const tags = h("div", {}, stage);
+  const lines = {};
+  for (const f of it.flags) {
+    lines[f.id] = s("polyline", { points: f.pts.map((p) => p[0] * it.w + "," + p[1] * it.h).join(" "), style: "stroke:" + COL[f.kind] + ";stroke-width:5;stroke-opacity:0.95" }, ov);
+    const m = f.pts[Math.floor(f.pts.length / 2)]; const t = h("span", { class: "tag" }, tags, f.id); t.style.left = (m[0] * 100) + "%"; t.style.top = (m[1] * 100) + "%"; t.style.background = TAGBG[f.kind];
+  }
+  for (const b of it.breaks) {
+    lines[b.id] = s("polyline", { points: b.curve.map((p) => p[0] * it.w + "," + p[1] * it.h).join(" "), style: "stroke:" + COL[b.kind] + ";stroke-width:3;stroke-dasharray:6 5" }, ov);
+    s("circle", { cx: b.end[0] * it.w, cy: b.end[1] * it.h, r: 7, style: "fill:none;stroke:" + COL[b.kind] + ";stroke-width:3" }, ov);
+    const t = h("span", { class: "tag" }, tags, b.id); t.style.left = (b.end[0] * 100) + "%"; t.style.top = (b.end[1] * 100) + "%"; t.style.background = TAGBG[b.kind];
+  }
+  const fol = h("div", {}, stage);
+  for (const f of it.folia) { const t = h("span", { class: "fol" }, fol, String(f.n)); t.style.left = (f.x * 100) + "%"; t.style.top = (f.y * 100) + "%"; }
+  fol.hidden = true;
+  const vdefs = [["img", "Image"], ["outline", "Image + IGL outline"], ["labels", "Labels"]];
+  function setView(v) { outl.hidden = v !== "outline"; labs.hidden = v !== "labels"; views.querySelectorAll("button.v").forEach((b, i) => b.setAttribute("aria-pressed", String(vdefs[i][0] === v))); }
+  for (const [v, t] of vdefs) { const b = h("button", { type: "button", class: "v", "aria-pressed": "false" }, views, t); b.addEventListener("click", (e) => { e.stopPropagation(); setView(v); }); }
+  setView("img");
+  for (const [name, layer, on] of [["Flags", [ov, tags], true], ["Folium numbers", [fol], false]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(on) }, views, name);
+    b.addEventListener("click", (e) => { e.stopPropagation(); const show = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(show)); layer.forEach((l) => { l.style.display = show ? "" : "none"; }); });
+  }
+  stage.addEventListener("click", (e) => {
+    if (!db || e.target.classList.contains("mk")) return;
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    let best = null, bd = Infinity; for (const f of it.folia) { const d = Math.hypot((f.x - x) * it.w, (f.y - y) * it.h); if (d < bd) { bd = d; best = f.n; } }
+    const cur = get(it.id); cur.markers = (cur.markers || []).concat([{ x: Math.round(x * 1e4) / 1e4, y: Math.round(y * 1e4) / 1e4, folium: best }]); save(it.id, cur);
+  });
+  const side = h("div", { class: "side" }, sec);
+  h("h2", {}, side, it.id.replace("_p27", ""));
+  h("div", { class: "muted" }, side, it.ribbon_mm + " mm of IGL ribbon, " + it.flagged_pct + "% flagged. " + it.flags.length + " stretches, " + it.breaks.length + " breaks.");
+  const list = (arr, title, describe) => {
+    if (!arr.length) return;
+    h("div", { class: "muted", style: "color:var(--fg)" }, side, title);
+    for (const q of arr) {
+      const row = h("div", { class: "item" }, side);
+      const id = h("span", { class: "id" }, row, q.id); id.style.background = TAGBG[q.kind];
+      const w = h("div", { class: "what" }, row); describe(q, w);
+      const seg = h("div", { class: "seg2", role: "group", "aria-label": "Is " + q.id + " a real problem" }, row);
+      for (const [v, t] of [["real", "Real problem"], ["fine", "Fine"]]) {
+        const b = h("button", { type: "button", "aria-pressed": "false", class: "ans" }, seg, t); b.dataset.k = q.id; b.dataset.v = v; b.disabled = true;
+        b.addEventListener("click", () => { const cur = get(it.id); cur.items = cur.items || {}; if (cur.items[q.id] === v) delete cur.items[q.id]; else cur.items[q.id] = v; save(it.id, cur); });
+      }
+      const L = lines[q.id];
+      row.addEventListener("mouseenter", () => L && L.classList.add("hl")); row.addEventListener("mouseleave", () => L && L.classList.remove("hl"));
+    }
+  };
+  list(it.flags, "Flagged stretches (strongest first)", (f, w) => {
+    h("b", {}, w, f.type); w.append(" · " + f.length_um + " µm · " + f.level.toFixed(2) + "× threshold");
+    if (f.also.length) h("div", { class: "muted" }, w, "also: " + f.also.join(", "));
+  });
+  list(it.breaks, "Breaks", (b, w) => {
+    h("b", {}, w, b.kind === "likely" ? "Likely break" : "Possible break across white-matter label");
+    w.append(" · continues " + b.length_um + " µm" + (b.wm_um ? ", " + b.wm_um + " µm of it through white matter" : "") + " · score " + b.score);
+  });
+  if (!it.flags.length && !it.breaks.length) h("p", { class: "muted" }, side, "Nothing flagged.");
+  h("div", { class: "muted", style: "color:var(--fg)" }, side, "Missed something? Click the image to drop a marker.");
+  h("ol", { class: "marks" }, side);
+  const ta = h("textarea", { id: "note-" + it.id, placeholder: "Notes", "aria-label": "Notes for " + it.id }, side); ta.disabled = true;
+  ta.addEventListener("change", () => { const cur = get(it.id); cur.note = ta.value.trim(); save(it.id, cur); });
+  sec._stage = stage;
+  return sec;
+}
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+function paint(id) {
+  const sec = document.getElementById("s-" + id); if (!sec) return; const cur = state[id] || {};
+  sec.querySelectorAll("button.ans").forEach((b) => b.setAttribute("aria-pressed", String((cur.items || {})[b.dataset.k] === b.dataset.v)));
+  sec._stage.querySelectorAll(".mk").forEach((m) => m.remove());
+  const ol = sec.querySelector("ol.marks"); ol.textContent = "";
+  (cur.markers || []).forEach((m, i) => {
+    const b = h("button", { type: "button", class: "mk", "aria-label": "Remove marker " + (i + 1) }, sec._stage, String(i + 1)); b.style.left = (m.x * 100) + "%"; b.style.top = (m.y * 100) + "%";
+    b.addEventListener("click", (e) => { e.stopPropagation(); const c = get(id); c.markers.splice(i, 1); save(id, c); });
+    const li = h("li", {}, ol, "marker " + (i + 1) + (m.folium ? " · folium " + m.folium : ""));
+    const rm = h("button", { type: "button" }, li, "remove"); rm.addEventListener("click", () => { const c = get(id); c.markers.splice(i, 1); save(id, c); });
+  });
+  const ta = document.getElementById("note-" + id); if (ta && document.activeElement !== ta) ta.value = cur.note || "";
+}
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString(); state[id] = cur; paint(id); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc("anomaly/" + id).set(cur)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus(e && e.code === "invalid_argument" ? "You can view this page but not save answers." : "Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+const secs = document.getElementById("secs");
+for (const it of ITEMS) secs.appendChild(section(it));
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to mark flags.", true); return; }
+  document.querySelectorAll("button.ans, textarea").forEach((b) => { b.disabled = false; });
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection("anomaly").onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Answers load and save automatically"); }
+    ITEMS.forEach((i) => paint(i.id));
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>

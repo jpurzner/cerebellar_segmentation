@@ -1,0 +1,324 @@
+<title>New IGL Step</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* layout: a lab report — findings and the held-out numbers first, then one card per section with the overlay image and a verdict; same family as IGL Gap Fill / IGL Trace */
+:root {
+  --bg: #f2f4f7; --surface: #ffffff; --fg: #18202b; --fg2: #4f5a69; --muted: #6a7584; --line: #d6dce4; --chip: #eef1f5;
+  --accent: #1d5b86; --accent-fg: #ffffff; --bad: #b3362f; --good: #2f7d3b; --plate: #0b0e12;
+  --igl: #3be0ff; --add: #3cdc5a; --not: #ff961e; --corr: #ff2fd6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --text: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #19202a; --fg: #e5e9ef; --fg2: #b4bdc9; --muted: #96a1af; --line: #2c3542; --chip: #232b36;
+  --accent: #82b8e2; --accent-fg: #0d1520; --bad: #ff8b80; --good: #7fd18b; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 24px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+p { margin: 0; max-width: 78ch; }
+.lede { color: var(--fg2); }
+.status { font-size: 14px; color: var(--muted); }
+.status.err { color: var(--bad); }
+.muted { color: var(--muted); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.findings { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; max-width: 82ch; }
+.findings li::marker { color: var(--accent); font-weight: 600; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font: 500 11px var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td.num { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+td.best { font-weight: 600; }
+tr.pick td { background: var(--chip); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--fg2); }
+.legend i { display: inline-block; width: 14px; height: 14px; border-radius: 2px; margin-right: 6px; vertical-align: -2px; }
+.legend i.line { height: 3px; vertical-align: 3px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.seg { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.seg button, .pick { font: 13px var(--text); padding: 4px 11px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--fg); cursor: pointer; min-height: 30px; }
+.seg button[aria-pressed="true"], .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:disabled { opacity: 0.5; cursor: default; }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.sec header { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.sec .k { font: 500 12px var(--mono); color: var(--muted); }
+.view { background: var(--plate); border-radius: 4px; overflow: auto; max-height: 82vh; }
+.view img { display: block; width: 100%; height: auto; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--fg2); }
+.stats b { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+.answer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+textarea { flex: 1 1 280px; box-sizing: border-box; min-height: 34px; font: 13px var(--text); padding: 6px 8px; border: 1px solid var(--line);
+  border-radius: 4px; background: var(--bg); color: var(--fg); resize: vertical; }
+.tag { font: 500 11px var(--mono); padding: 1px 6px; border-radius: 8px; background: var(--chip); color: var(--fg2); }
+.tag.cko { background: var(--not); color: #1a0d00; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; }
+.tools label { display: inline-flex; gap: 6px; align-items: center; }
+.tools input[type=range] { width: 130px; }
+.tools .seg button[data-v="paint"][aria-pressed="true"] { background: #ffd60a; border-color: #ffd60a; color: #1a1500; }
+.tools .seg button[data-v="erase"][aria-pressed="true"] { background: #ff5c5c; border-color: #ff5c5c; color: #1a0000; }
+.stage { position: relative; }
+.stage > img, .stage > canvas { display: block; width: 100%; height: auto; }
+.stage > canvas, .stage > .ol { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.stage > .ol { pointer-events: none; }
+.stage > canvas.draw { cursor: none; touch-action: none; }
+.ring { position: absolute; border: 2px solid #fff; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 1px #000; display: none; }
+</style>
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:8px">
+  <h1>New IGL Step, round 2</h1>
+  <p class="lede" id="lede"></p>
+  <p class="status" id="status" role="status">Connecting to saved answers…</p>
+</header>
+
+<section class="card">
+  <h2>What came out</h2>
+  <ol class="findings" id="findings"></ol>
+</section>
+
+<section class="card">
+  <h2>Round 1 against round 2, on sections each model had not seen</h2>
+  <p class="muted">Both rounds start from MATLAB's IGL and apply the same rules: add confident IGL (pieces of at least 10,000 µm²) and remove IGL the model calls EGL (pieces of at least 5,000 µm²). Round 1 learned from the 12 controls only; round 2 also from your 6 corrected cKO sections, each section held out of its own model. &ldquo;Your edits reproduced&rdquo;: share of the cells you (or the repairs) changed that the automatic result gets the same way. &ldquo;Other changes&rdquo;: cells it changes that you left alone.</p>
+  <div class="tbl"><table id="held"></table></div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+  <div class="bar">
+    <h2 style="margin-right:auto">Every section</h2>
+    <div class="seg" role="group" aria-label="Show sections" id="grp"></div>
+    <div class="seg" role="group" aria-label="Zoom" id="zoom"></div>
+  </div>
+  <div class="legend">
+    <span><i style="background:rgba(90,160,255,0.55)"></i>IGL as it stands (repaired / your round-1 edits / MATLAB)</span>
+    <span><i style="background:var(--add)"></i>IGL the new step adds</span>
+    <span><i style="background:var(--not)"></i>IGL the new step removes (it calls it EGL)</span>
+    <span><i style="background:#ffd60a"></i>IGL you painted</span>
+    <span><i style="background:rgba(255,60,60,0.6)"></i>IGL you erased</span>
+    <span><i class="line" style="background:var(--igl)"></i>outline of the IGL as it stands</span>
+    <span><i class="line" style="background:var(--corr)"></i>where you or the repairs changed MATLAB before</span>
+  </div>
+  <p class="muted">Image: the nuclei stain, whole section, in the label grid's frame. Pick Paint or Erase, set the brush size and drag over the image; switch to Look to scroll without drawing. Every stroke saves on its own; Undo takes back the last one. What you leave is that section's IGL.</p>
+  <div id="secs" style="display:flex;flex-direction:column;gap:14px"></div>
+</section>
+</div>
+<script>
+const DATA = __DATA__;
+const state = {}, chains = {};
+let db = null, grp = "control", zoom = 1;
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, parent, text) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+function setStatus(t, err) { $("status").textContent = t; $("status").classList.toggle("err", !!err); }
+const um2 = (v) => v.toLocaleString() + " µm²";
+
+$("lede").textContent = "Round 2 of the image-based IGL step: it now also learns from your 6 corrected cKO sections and removes IGL it calls EGL, as well as adding IGL MATLAB missed. " +
+  "Each section starts from its best labels so far; only the step's new changes are coloured (green added, orange removed). Fix what is wrong with the brush and eraser.";
+for (const t of DATA.findings || []) { const li = h("li", {}, $("findings")); li.innerHTML = t; }
+
+(function () {
+  const T = $("held"), tr0 = h("tr", {}, h("thead", {}, T));
+  for (const c of ["Section", "", "MATLAB", "Round 1", "Round 2", "Your edits reproduced, round 1", "round 2", "Other changes, round 1", "round 2"]) h("th", {}, tr0, c);
+  const tb = h("tbody", {}, T);
+  const pc = (v) => v == null ? "–" : Math.round(v * 100) + "%";
+  for (const r of DATA.eval.sections) {
+    const tr = h("tr", {}, tb);
+    h("td", {}, tr, r.section + (r.section === "s1_2" ? " (gold)" : ""));
+    const tg = h("td", {}, tr); h("span", { class: "tag" + (r.group === "cKO" ? " cko" : "") }, tg, r.group === "cKO" ? "cKO" : "control");
+    const best = Math.max(r.iou_matlab, r.r1.iou, r.r2.iou);
+    for (const v of [r.iou_matlab, r.r1.iou, r.r2.iou]) h("td", { class: "num" + (v === best ? " best" : "") }, tr, v.toFixed(3));
+    h("td", { class: "num" }, tr, pc(r.r1.edits_reproduced)); h("td", { class: "num" + ((r.r2.edits_reproduced || 0) > (r.r1.edits_reproduced || 0) ? " best" : "") }, tr, pc(r.r2.edits_reproduced));
+    h("td", { class: "num" }, tr, um2(r.r1.extra_changes_um2)); h("td", { class: "num" }, tr, um2(r.r2.extra_changes_um2));
+  }
+  for (const [g, lab] of [["cKO", "Mean, cKO"], ["control", "Mean, controls"]]) {
+    const m = DATA.eval.summary[g]; if (!m) continue;
+    const tf = h("tr", {}, h("tfoot", {}, T));
+    h("td", {}, tf, lab); h("td", {}, tf, "");
+    for (const v of [m.iou_matlab, m.r1_iou, m.r2_iou]) h("td", { class: "num" }, tf, v.toFixed(3));
+    h("td", { class: "num" }, tf, pc(m.r1_reproduced)); h("td", { class: "num" }, tf, pc(m.r2_reproduced));
+    h("td", { class: "num" }, tf, um2(m.r1_extra_um2)); h("td", { class: "num" }, tf, um2(m.r2_extra_um2));
+  }
+})();
+
+const VERD = [["done", "Done: the IGL is right now"], ["fine", "Fine as proposed, no edits needed"], ["unsure", "Unsure"]];
+for (const [k, lab] of [["control", "Controls (held out)"], ["cKO", "EZH2 cKO"]]) {
+  const n = DATA.sections.filter((s) => s.group === k).length;
+  const b = h("button", { type: "button", "aria-pressed": String(k === grp) }, $("grp"), lab + " (" + n + ")");
+  b.addEventListener("click", () => { grp = k; $("grp").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); show(); });
+}
+for (const z of [1, 2, 3]) {
+  const b = h("button", { type: "button", "aria-pressed": String(z === zoom) }, $("zoom"), z + "×");
+  b.addEventListener("click", () => { zoom = z; $("zoom").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); document.querySelectorAll(".stage").forEach((st) => { st.style.width = (zoom * 100) + "%"; }); });
+}
+const ED = {};            // per section: grid, proposed, user edits, canvases
+let tool = "look", brushUm = 40;
+function stampSeg(E, a, b, r, val) {
+  const W = E.W, H = E.H;
+  const x0 = Math.max(Math.floor(Math.min(a[0], b[0]) - r - 1), 0), x1 = Math.min(Math.ceil(Math.max(a[0], b[0]) + r + 1), W - 1);
+  const y0 = Math.max(Math.floor(Math.min(a[1], b[1]) - r - 1), 0), y1 = Math.min(Math.ceil(Math.max(a[1], b[1]) + r + 1), H - 1);
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy, r2 = r * r;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const cx = x + 0.5, cy = y + 0.5;
+    let t = L2 > 0 ? ((cx - a[0]) * dx + (cy - a[1]) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t));
+    const ex = cx - (a[0] + t * dx), ey = cy - (a[1] + t * dy);
+    if (ex * ex + ey * ey <= r2) E.user[y * W + x] = val;
+  }
+}
+function applyStroke(E, st) {
+  const val = st.mode === "paint" ? 1 : 2, r = st.r_um / 4;
+  const P = st.pts.map((p) => [p[0] * E.W, p[1] * E.H]);
+  if (P.length === 1) stampSeg(E, P[0], P[0], r, val);
+  for (let i = 1; i < P.length; i++) stampSeg(E, P[i - 1], P[i], r, val);
+}
+function replay(short) {
+  const E = ED[short]; if (!E || !E.prop) return;
+  E.user.fill(0);
+  for (const st of ((state[short] || {}).strokes || [])) applyStroke(E, st);
+  if (E.live) applyStroke(E, E.live);
+  draw(short);
+}
+function draw(short) {
+  const E = ED[short]; if (!E || !E.prop) return;
+  const d = E.img.data, n = E.W * E.H;
+  for (let i = 0; i < n; i++) {
+    const u = E.user[i], p = E.prop[i], k = 4 * i;
+    let c = null;
+    if (u === 1) c = [255, 214, 10, 150];
+    else if (u === 2) c = p >= 80 ? [255, 60, 60, 110] : null;
+    else if (p > 150) c = [60, 220, 90, 140];
+    else if (p >= 80) c = [90, 160, 255, 70];
+    else if (p >= 40) c = [255, 150, 30, 120];
+    if (c) { d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = c[3]; } else d[k + 3] = 0;
+  }
+  E.ctx.putImageData(E.img, 0, 0);
+  const cur = state[short] || {};
+  let painted = 0, erased = 0;
+  for (let i = 0; i < n; i++) { if (E.user[i] === 1 && E.prop[i] < 80) painted++; if (E.user[i] === 2 && E.prop[i] >= 80) erased++; }
+  E.edits.textContent = ((cur.strokes || []).length ? (cur.strokes.length + " stroke" + (cur.strokes.length === 1 ? "" : "s") + ": ") : "No edits yet. ") +
+    ((cur.strokes || []).length ? ("+" + (painted * 16).toLocaleString() + " µm² painted, −" + (erased * 16).toLocaleString() + " µm² erased") : "");
+}
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll(".toolseg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === t)));
+  document.querySelectorAll(".stage > canvas").forEach((c) => c.classList.toggle("draw", t !== "look"));
+}
+for (const s of DATA.sections) {
+  const c = h("article", { class: "sec", id: "s-" + s.short }, $("secs")); c.dataset.grp = s.group;
+  const hd = h("header", {}, c);
+  h("h3", {}, hd, s.short);
+  h("span", { class: "tag" + (s.group === "cKO" ? " cko" : "") }, hd, s.group === "cKO" ? "EZH2 cKO" : "control");
+  if (s.needs) h("span", { class: "tag" }, hd, s.needs);
+  h("span", { class: "k" }, hd, s.mag + " · " + s.w_um.toLocaleString() + " × " + s.h_um.toLocaleString() + " µm");
+  const st = h("div", { class: "stats" }, c);
+  const add = (lab, v) => { const sp = h("span", {}, st); sp.append(lab + " "); h("b", {}, sp, v); };
+  add("starts from", s.stats.base); add("IGL", s.stats.igl_mm2 + " mm²"); add("added", um2(s.stats.add_um2)); add("removed", um2(s.stats.rem_um2));
+  const tl = h("div", { class: "tools" }, c);
+  const sg = h("div", { class: "seg toolseg", role: "group", "aria-label": "Tool for " + s.short }, tl);
+  for (const [v, lab] of [["look", "Look"], ["paint", "Paint IGL"], ["erase", "Erase IGL"]]) {
+    const b = h("button", { type: "button", "aria-pressed": String(v === tool) }, sg, lab); b.dataset.v = v;
+    b.addEventListener("click", () => setTool(v));
+  }
+  const lb = h("label", {}, tl); lb.append("Brush");
+  const rg = h("input", { type: "range", min: "8", max: "160", step: "4", value: String(brushUm), "aria-label": "Brush diameter for " + s.short, class: "brush" }, lb);
+  const bv = h("span", { class: "k" }, lb, brushUm + " µm");
+  rg.addEventListener("input", () => { brushUm = +rg.value; document.querySelectorAll("input.brush").forEach((x) => { x.value = rg.value; x.nextSibling.textContent = brushUm + " µm"; }); });
+  const ub = h("button", { type: "button", class: "pick" }, tl, "Undo");
+  const cb = h("button", { type: "button", class: "pick" }, tl, "Clear my edits");
+  const sh = h("label", {}, tl); const ck = h("input", { type: "checkbox", checked: "" }, sh); sh.append("Show IGL");
+  const edits = h("span", { class: "k" }, tl, "");
+  const v = h("div", { class: "view" }, c);
+  const stage = h("div", { class: "stage" }, v);
+  h("img", { src: s.base, alt: s.short + ": nuclei stain, whole section", loading: "lazy" }, stage);
+  const cv = h("canvas", { width: String(s.grid[1]), height: String(s.grid[0]), "aria-label": "Editable IGL for " + s.short }, stage);
+  h("img", { class: "ol", src: s.outline, alt: "" }, stage);
+  const ring = h("div", { class: "ring" }, stage);
+  ck.addEventListener("change", () => { cv.style.visibility = ck.checked ? "visible" : "hidden"; });
+  const E = ED[s.short] = { W: s.grid[1], H: s.grid[0], prop: null, user: new Uint8Array(s.grid[0] * s.grid[1]), ctx: cv.getContext("2d"),
+                            img: null, live: null, edits };
+  E.img = E.ctx.createImageData(E.W, E.H);
+  const pi = new Image();
+  pi.onload = () => {
+    const t = document.createElement("canvas"); t.width = E.W; t.height = E.H;
+    const tc = t.getContext("2d"); tc.drawImage(pi, 0, 0);
+    const d = tc.getImageData(0, 0, E.W, E.H).data; E.prop = new Uint8Array(E.W * E.H);
+    for (let i = 0; i < E.W * E.H; i++) E.prop[i] = d[4 * i];
+    replay(s.short);
+  };
+  pi.src = s.proposed;
+  const pt = (ev) => { const r = cv.getBoundingClientRect(); return [Math.min(Math.max((ev.clientX - r.left) / r.width, 0), 1), Math.min(Math.max((ev.clientY - r.top) / r.height, 0), 1)]; };
+  const showRing = (ev) => {
+    if (tool === "look") { ring.style.display = "none"; return; }
+    const r = cv.getBoundingClientRect(), dpx = brushUm / 4 * (r.width / E.W);
+    ring.style.display = "block"; ring.style.width = ring.style.height = dpx + "px";
+    ring.style.left = (ev.clientX - r.left - dpx / 2) + "px"; ring.style.top = (ev.clientY - r.top - dpx / 2) + "px";
+  };
+  let raf = 0;
+  cv.addEventListener("pointerdown", (ev) => {
+    if (tool === "look" || !E.prop) return;
+    if (!db) { setStatus("Edits can't be saved in this view. Open the page on claude.ai to paint.", true); return; }
+    ev.preventDefault(); cv.setPointerCapture(ev.pointerId);
+    const p = pt(ev); E.live = { mode: tool, r_um: brushUm / 2, pts: [[+p[0].toFixed(5), +p[1].toFixed(5)]] };
+    applyStroke(E, { mode: E.live.mode, r_um: E.live.r_um, pts: [E.live.pts[0]] }); draw(s.short);
+  });
+  cv.addEventListener("pointermove", (ev) => {
+    showRing(ev);
+    if (!E.live) return;
+    const p = pt(ev), last = E.live.pts[E.live.pts.length - 1];
+    if (Math.hypot((p[0] - last[0]) * E.W, (p[1] - last[1]) * E.H) < 0.7) return;
+    E.live.pts.push([+p[0].toFixed(5), +p[1].toFixed(5)]);
+    applyStroke(E, { mode: E.live.mode, r_um: E.live.r_um, pts: [last, E.live.pts[E.live.pts.length - 1]] });
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(s.short); });
+  });
+  const end = () => {
+    if (!E.live) return;
+    const cur = get(s.short); cur.strokes = (cur.strokes || []).concat([E.live]); E.live = null; save(s.short, cur);
+  };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+  cv.addEventListener("pointerleave", () => { ring.style.display = "none"; });
+  ub.addEventListener("click", () => { const cur = get(s.short); if (!(cur.strokes || []).length) return; cur.strokes.pop(); save(s.short, cur); });
+  cb.addEventListener("click", () => { const cur = get(s.short); if (!(cur.strokes || []).length) return; cur.strokes = []; save(s.short, cur); });
+  const ans = h("div", { class: "answer" }, c);
+  const vb = h("div", { class: "seg", role: "group", "aria-label": "Verdict for " + s.short }, ans);
+  for (const [val, lab] of VERD) {
+    const b = h("button", { type: "button", class: "pick", "aria-pressed": "false" }, vb, lab);
+    b.dataset.v = val; b.disabled = true;
+    b.addEventListener("click", () => { const cur = get(s.short); cur.verdict = cur.verdict === val ? null : val; save(s.short, cur); });
+  }
+  const ta = h("textarea", { id: "note-" + s.short, placeholder: "Notes", "aria-label": "Notes for " + s.short }, ans); ta.disabled = true;
+  ta.addEventListener("change", () => { const cur = get(s.short); cur.note = ta.value.trim(); save(s.short, cur); });
+}
+function show() { document.querySelectorAll("article.sec").forEach((c) => { c.hidden = c.dataset.grp !== grp; }); }
+show();
+function get(id) { return JSON.parse(JSON.stringify(state[id] || {})); }
+function paint(id) {
+  const c = $("s-" + id); if (!c) return; const cur = state[id] || {};
+  c.querySelectorAll(".answer button.pick").forEach((b) => b.setAttribute("aria-pressed", String(cur.verdict === b.dataset.v)));
+  replay(id);
+  const ta = $("note-" + id); if (ta && document.activeElement !== ta) ta.value = cur.note || "";
+}
+function save(id, cur) {
+  cur.updatedAt = new Date().toISOString(); state[id] = cur; paint(id); setStatus("Saving…");
+  chains[id] = (chains[id] || Promise.resolve()).then(() => db.doc(DATA.collection + "/" + id).set(cur)).then(() => setStatus("Saved"))
+    .catch((e) => setStatus(e && e.code === "invalid_argument" ? "You can view this page but not save answers." : "Not saved: " + (e && e.message ? e.message : "connection problem") + ". Try again.", true));
+}
+(async () => {
+  db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+  if (!db) { setStatus("Answers can't be saved in this view. Open the page on claude.ai to judge the sections.", true); return; }
+  document.querySelectorAll(".answer button.pick, textarea").forEach((b) => { b.disabled = false; });
+  const timer = setTimeout(() => setStatus("Can't reach saved answers yet; your clicks still save when the connection returns.", true), 10000);
+  db.collection(DATA.collection).onSnapshot((snap) => {
+    for (const d of snap.docs) if (!snap.metadata.hasPendingWrites) state[d.id] = d.data();
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus("Answers load and save automatically"); }
+    DATA.sections.forEach((s) => paint(s.short));
+  }, (e) => { clearTimeout(timer); setStatus("Saved answers can't be loaded right now (" + e.code + ").", true); });
+})();
+</script>
